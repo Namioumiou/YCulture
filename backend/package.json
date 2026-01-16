@@ -1,0 +1,21 @@
+{
+  "name": "yculture",
+  "version": "1.0.0",
+  "description": "Application de Quizz sur téléphone",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Namioumiou/YCulture.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Namioumiou/YCulture/issues"
+  },
+  "homepage": "https://github.com/Namioumiou/YCulture#readme"
+}
