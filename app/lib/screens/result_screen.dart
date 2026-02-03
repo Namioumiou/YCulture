@@ -46,10 +46,10 @@ class ResultScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(
-                Icons.emoji_events,
-                size: 100,
-                color: Colors.amber,
+              Text(
+                _getEmojiForPercentage(percentage),
+                style: const TextStyle(fontSize: 100),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
               const Text(
@@ -113,6 +113,26 @@ class ResultScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getEmojiForPercentage(int percentage) {
+    if (percentage == 100) {
+      return '🎯'; // Parfait
+    } else if (percentage >= 90) {
+      return '🏆'; // Excellent
+    } else if (percentage >= 80) {
+      return '⭐'; // Très bien
+    } else if (percentage >= 70) {
+      return '👏'; // Bien
+    } else if (percentage >= 60) {
+      return '👍'; // Pas mal
+    } else if (percentage >= 50) {
+      return '🙂'; // Moyen
+    } else if (percentage >= 40) {
+      return '😐'; // Peut mieux faire
+    } else {
+      return '📚'; // Continuez à apprendre
+    }
   }
 
   Widget _buildScoreCard(int percentage) {
