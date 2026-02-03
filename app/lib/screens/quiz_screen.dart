@@ -321,12 +321,8 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildOpenAnswer(Question question) {
-    final controller = TextEditingController(
-      text: _userAnswers[_currentQuestionIndex]?.toString() ?? '',
-    );
-
-    return TextField(
-      controller: controller,
+    return TextFormField(
+      initialValue: _userAnswers[_currentQuestionIndex]?.toString() ?? '',
       onChanged: (value) => _submitAnswer(value),
       decoration: InputDecoration(
         hintText: 'Votre réponse...',
