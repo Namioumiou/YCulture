@@ -131,12 +131,13 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
@@ -158,6 +159,7 @@ class _QuizScreenState extends State<QuizScreen> {
           _buildNavigationButtons(),
         ],
       ),
+    ),
     );
   }
 

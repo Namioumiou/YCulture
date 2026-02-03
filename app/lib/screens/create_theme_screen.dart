@@ -37,7 +37,7 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Thème créé avec succès !'),
-          backgroundColor: Colors.lightBlue,
+          backgroundColor: Colors.green,
         ),
       );
 
@@ -52,10 +52,11 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
         title: const Text('Créer un thème'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -125,6 +126,7 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -96,7 +96,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Veuillez sélectionner un thème'),
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Colors.orange,
           ),
         );
         return;
@@ -106,7 +106,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Veuillez sélectionner au moins une bonne réponse'),
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Colors.orange,
           ),
         );
         return;
@@ -145,7 +145,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Question créée avec succès !'),
-          backgroundColor: Colors.lightBlue,
+          backgroundColor: Colors.green,
         ),
       );
 
@@ -400,7 +400,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                                   ),
                                   filled: true,
                                   fillColor: isCorrect
-                                      ? Colors.lightBlue.withOpacity(0.1)
+                                      ? Colors.green.withOpacity(0.1)
                                       : Colors.grey[50],
                                 ),
                                 validator: (value) {
@@ -413,7 +413,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                             ),
                             IconButton(
                               onPressed: () => _removeChoiceField(index),
-                              icon: const Icon(Icons.delete, color: Colors.indigo),
+                              icon: const Icon(Icons.delete, color: Colors.red),
                             ),
                           ],
                         ),

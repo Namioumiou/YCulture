@@ -40,7 +40,7 @@ class ResultScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -121,19 +121,19 @@ class ResultScreen extends StatelessWidget {
     IconData icon;
 
     if (percentage >= 80) {
-      color = Colors.lightBlue;
+      color = Colors.green;
       message = 'Excellent !';
       icon = Icons.star;
     } else if (percentage >= 60) {
-      color = Colors.blue;
+      color = Colors.lightGreen;
       message = 'Bien joué !';
       icon = Icons.thumb_up;
     } else if (percentage >= 40) {
-      color = Colors.blue;
+      color = Colors.orange;
       message = 'Pas mal !';
       icon = Icons.sentiment_satisfied;
     } else {
-      color = Colors.indigo;
+      color = Colors.red;
       message = 'Continuez à vous entraîner';
       icon = Icons.sentiment_dissatisfied;
     }
@@ -178,7 +178,7 @@ class ResultScreen extends StatelessWidget {
           child: _buildStatCard(
             'Correctes',
             correctAnswers.toString(),
-            Colors.lightBlue,
+            Colors.green,
             Icons.check_circle,
           ),
         ),
@@ -187,7 +187,7 @@ class ResultScreen extends StatelessWidget {
           child: _buildStatCard(
             'Incorrectes',
             (totalQuestions - correctAnswers).toString(),
-            Colors.indigo,
+            Colors.red,
             Icons.cancel,
           ),
         ),

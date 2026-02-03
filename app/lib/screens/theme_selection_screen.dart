@@ -28,8 +28,9 @@ class ThemeSelectionScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          return SafeArea(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
             itemCount: themes.length,
             itemBuilder: (context, index) {
               final theme = themes[index];
@@ -43,7 +44,7 @@ class ThemeSelectionScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Ce thème ne contient pas encore de questions'),
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: Colors.orange,
                       ),
                     );
                   } else {
@@ -57,6 +58,7 @@ class ThemeSelectionScreen extends StatelessWidget {
                 },
               );
             },
+          ),
           );
         },
       ),

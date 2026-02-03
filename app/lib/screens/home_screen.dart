@@ -63,7 +63,7 @@ class HomeScreen extends StatelessWidget {
               _MenuButton(
                 icon: Icons.add_box,
                 label: 'Créer un thème',
-                color: Colors.lightBlue,
+                color: Colors.teal,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -77,7 +77,7 @@ class HomeScreen extends StatelessWidget {
               _MenuButton(
                 icon: Icons.question_answer,
                 label: 'Créer une question',
-                color: Colors.indigo,
+                color: Colors.orange,
                 onPressed: () {
                   Navigator.push(
                     context,
