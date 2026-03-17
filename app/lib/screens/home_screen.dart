@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 import 'theme_selection_screen.dart';
 import 'create_theme_screen.dart';
 import 'create_question_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -26,20 +28,37 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.primary, AppColors.secondary],
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppColors.primary, AppColors.secondary],
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                color: Colors.white,
+                                size: 34,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome,
-                            color: Colors.white,
-                            size: 34,
-                          ),
+                            const Spacer(),
+                            _HomeProfileAvatar(
+                              avatarId: quizProvider.profileAvatarId,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProfileScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         Text(
@@ -109,6 +128,21 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _MenuButton(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Mon profil',
+                    subtitle: 'Modifier votre avatar utilisateur',
+                    color: AppColors.ink,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _MenuButton(
                     icon: Icons.edit_note_rounded,
                     label: 'Créer une question',
                     subtitle: 'Texte, image ou audio',
@@ -126,6 +160,99 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeProfileAvatar extends StatefulWidget {
+  final String? avatarId;
+  final VoidCallback onTap;
+
+  const _HomeProfileAvatar({
+    required this.avatarId,
+    required this.onTap,
+  });
+
+  @override
+  State<_HomeProfileAvatar> createState() => _HomeProfileAvatarState();
+}
+
+class _HomeProfileAvatarState extends State<_HomeProfileAvatar> {
+  static const String _avatarDirectory = 'assets/avatars/';
+  Map<String, String> _avatarById = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatarIndex();
+  }
+
+  Future<void> _loadAvatarIndex() async {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = manifest.listAssets().where((asset) {
+      return asset.startsWith(_avatarDirectory) &&
+          (asset.endsWith('.png') ||
+              asset.endsWith('.jpg') ||
+              asset.endsWith('.jpeg') ||
+              asset.endsWith('.webp'));
+    });
+
+    final map = <String, String>{};
+    for (final path in assets) {
+      final fileName = path.split('/').last;
+      final dot = fileName.lastIndexOf('.');
+      final id = dot == -1 ? fileName : fileName.substring(0, dot);
+      map[id] = path;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _avatarById = map;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarPath = widget.avatarId != null ? _avatarById[widget.avatarId] : null;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [AppColors.secondary, AppColors.accent],
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A0F172A),
+              blurRadius: 14,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: CircleAvatar(
+          radius: 26,
+          backgroundColor: Colors.white,
+          child: ClipOval(
+            child: avatarPath != null
+                ? Image.asset(
+                    avatarPath,
+                    width: 46,
+                    height: 46,
+                    fit: BoxFit.cover,
+                  )
+                : const Icon(
+                    Icons.person_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
           ),
         ),
       ),

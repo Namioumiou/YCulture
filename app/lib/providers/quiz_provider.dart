@@ -7,16 +7,28 @@ import '../models/theme.dart';
 import '../models/quiz_result.dart';
 
 class QuizProvider with ChangeNotifier {
+  static const int _xpPerLevel = 100;
+  static const int _xpPerCorrectAnswer = 20;
+  static const int _xpParticipationBonus = 10;
+  static const int _xpPerfectQuizBonus = 40;
+
   final List<QuizTheme> _themes = [];
   final List<Question> _questions = [];
   final List<QuizResult> _results = [];
   final _uuid = const Uuid();
   bool _isLoaded = false;
+  String? _profileAvatarId;
+  int _experiencePoints = 0;
 
   bool get isLoaded => _isLoaded;
   List<QuizTheme> get themes => List.unmodifiable(_themes);
   List<Question> get questions => List.unmodifiable(_questions);
   List<QuizResult> get results => List.unmodifiable(_results);
+  String? get profileAvatarId => _profileAvatarId;
+  int get experiencePoints => _experiencePoints;
+  int get xpPerLevel => _xpPerLevel;
+  int get level => (_experiencePoints ~/ _xpPerLevel) + 1;
+  int get experiencePointsInCurrentLevel => _experiencePoints % _xpPerLevel;
 
   QuizProvider() {
     _loadData();
@@ -24,6 +36,8 @@ class QuizProvider with ChangeNotifier {
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
+    _profileAvatarId = prefs.getString('profile_avatar_id');
+    _experiencePoints = prefs.getInt('experience_points') ?? 0;
     final themesJson = prefs.getString('themes');
     if (themesJson == null) {
       _initializeDefaultData();
@@ -46,6 +60,14 @@ class QuizProvider with ChangeNotifier {
     await prefs.setString('themes', jsonEncode(_themes.map((t) => t.toJson()).toList()));
     await prefs.setString('questions', jsonEncode(_questions.map((q) => q.toJson()).toList()));
     await prefs.setString('results', jsonEncode(_results.map((r) => r.toJson()).toList()));
+    await prefs.setInt('experience_points', _experiencePoints);
+    if (_profileAvatarId == null || _profileAvatarId!.isEmpty) {
+      await prefs.remove('profile_avatar_id');
+    } else {
+      await prefs.setString('profile_avatar_id', _profileAvatarId!);
+    }
+    // Cleanup legacy value from old gallery-based implementation.
+    await prefs.remove('profile_avatar_base64');
   }
 
   void _initializeDefaultData() {
@@ -149,15 +171,75 @@ class QuizProvider with ChangeNotifier {
   }
 
   // Gestion des résultats
-  void addResult(QuizResult result) {
+  ExperienceGain addResult(QuizResult result) {
+    final previousExperiencePoints = _experiencePoints;
+    final previousLevel = level;
+    final gainedExperiencePoints = _calculateExperienceGain(
+      correctAnswers: result.correctAnswers,
+      totalQuestions: result.totalQuestions,
+    );
+
     _results.add(result);
+    _experiencePoints += gainedExperiencePoints;
+
+    final currentLevel = level;
+
     notifyListeners();
     _saveData();
+
+    return ExperienceGain(
+      gainedExperiencePoints: gainedExperiencePoints,
+      previousLevel: previousLevel,
+      currentLevel: currentLevel,
+      previousExperiencePoints: previousExperiencePoints,
+      currentExperiencePoints: _experiencePoints,
+    );
+  }
+
+  int _calculateExperienceGain({
+    required int correctAnswers,
+    required int totalQuestions,
+  }) {
+    var gain = _xpParticipationBonus + (correctAnswers * _xpPerCorrectAnswer);
+    if (totalQuestions > 0 && correctAnswers == totalQuestions) {
+      gain += _xpPerfectQuizBonus;
+    }
+    return gain;
   }
 
   List<QuizResult> getResultsByTheme(String themeId) {
     return _results.where((r) => r.themeId == themeId).toList();
   }
 
+  Future<void> setProfileAvatar(String avatarId) async {
+    _profileAvatarId = avatarId;
+    notifyListeners();
+    await _saveData();
+  }
+
+  Future<void> clearProfileAvatar() async {
+    _profileAvatarId = null;
+    notifyListeners();
+    await _saveData();
+  }
+
   String generateId() => _uuid.v4();
+}
+
+class ExperienceGain {
+  final int gainedExperiencePoints;
+  final int previousLevel;
+  final int currentLevel;
+  final int previousExperiencePoints;
+  final int currentExperiencePoints;
+
+  const ExperienceGain({
+    required this.gainedExperiencePoints,
+    required this.previousLevel,
+    required this.currentLevel,
+    required this.previousExperiencePoints,
+    required this.currentExperiencePoints,
+  });
+
+  bool get didLevelUp => currentLevel > previousLevel;
 }
