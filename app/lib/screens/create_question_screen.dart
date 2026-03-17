@@ -418,6 +418,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                     // Question text
                     TextFormField(
                       controller: _questionController,
+                      keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
                         labelText: 'Question',
                         hintText: 'Entrez votre question',
@@ -428,7 +429,8 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      maxLines: 3,
+                      minLines: 1,
+                      maxLines: null,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Veuillez entrer une question';

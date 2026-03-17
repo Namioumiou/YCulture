@@ -80,12 +80,14 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: _descriptionController,
+                        keyboardType: TextInputType.multiline,
                         decoration: const InputDecoration(
                           labelText: 'Description',
                           hintText: 'Décrivez le contenu du thème',
                           prefixIcon: Icon(Icons.notes_rounded),
                         ),
-                        maxLines: 4,
+                        minLines: 1,
+                        maxLines: null,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Veuillez entrer une description';

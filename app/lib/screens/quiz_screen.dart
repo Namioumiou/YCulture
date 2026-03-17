@@ -450,7 +450,9 @@ class _QuizScreenState extends State<QuizScreen> {
         hintText: 'Votre réponse...',
         prefixIcon: Icon(Icons.edit_note_rounded),
       ),
-      maxLines: 4,
+      keyboardType: TextInputType.multiline,
+      minLines: 1,
+      maxLines: null,
     );
   }
 

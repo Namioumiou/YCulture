@@ -440,6 +440,7 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _questionController,
+                      keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
                         labelText: 'Question',
                         hintText: 'Entrez votre question',
@@ -450,7 +451,8 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      maxLines: 3,
+                      minLines: 1,
+                      maxLines: null,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Veuillez entrer une question';
