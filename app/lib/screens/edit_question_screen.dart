@@ -1,24 +1,26 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import '../models/question.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 
-class CreateQuestionScreen extends StatefulWidget {
-  const CreateQuestionScreen({super.key});
+class EditQuestionScreen extends StatefulWidget {
+  final Question question;
+
+  const EditQuestionScreen({super.key, required this.question});
 
   @override
-  State<CreateQuestionScreen> createState() => _CreateQuestionScreenState();
+  State<EditQuestionScreen> createState() => _EditQuestionScreenState();
 }
 
-class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
+class _EditQuestionScreenState extends State<EditQuestionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _questionController = TextEditingController();
   final _openAnswersController = TextEditingController();
@@ -36,15 +38,38 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
   @override
   void initState() {
     super.initState();
-    _addChoiceField();
-    _addChoiceField();
+    final question = widget.question;
+
+    _questionController.text = question.text;
+    _selectedThemeId = question.themeId;
+    _questionType = question.questionType;
+    _answerType = question.answerType;
+    _imagePath = question.imageUrl;
+    _audioPath = question.audioUrl;
+
+    if (question.answerType == AnswerType.open) {
+      _openAnswersController.text = question.correctAnswers.join('; ');
+    } else {
+      for (final choice in question.choices) {
+        _choiceControllers.add(TextEditingController(text: choice));
+      }
+      for (var i = 0; i < question.choices.length; i++) {
+        if (question.correctAnswers.contains(question.choices[i])) {
+          _correctChoiceIndices.add(i);
+        }
+      }
+      if (_choiceControllers.length < 2) {
+        _choiceControllers.add(TextEditingController());
+        _choiceControllers.add(TextEditingController());
+      }
+    }
   }
 
   @override
   void dispose() {
     _questionController.dispose();
     _openAnswersController.dispose();
-    for (var controller in _choiceControllers) {
+    for (final controller in _choiceControllers) {
       controller.dispose();
     }
     if (_isRecording) {
@@ -65,26 +90,25 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
       setState(() {
         _choiceControllers[index].dispose();
         _choiceControllers.removeAt(index);
-        _correctChoiceIndices.remove(index);
-        // Réajuster les indices supérieurs
-        final newIndices = <int>{};
-        for (var i in _correctChoiceIndices) {
-          if (i > index) {
-            newIndices.add(i - 1);
-          } else {
-            newIndices.add(i);
+
+        final shifted = <int>{};
+        for (final i in _correctChoiceIndices) {
+          if (i < index) {
+            shifted.add(i);
+          } else if (i > index) {
+            shifted.add(i - 1);
           }
         }
-        _correctChoiceIndices.clear();
-        _correctChoiceIndices.addAll(newIndices);
+        _correctChoiceIndices
+          ..clear()
+          ..addAll(shifted);
       });
     }
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
         _imagePath = image.path;
@@ -97,7 +121,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Arrêtez l\'enregistrement avant d\'importer un audio.',
+            'Arretez l\'enregistrement avant d\'importer un audio.',
           ),
           backgroundColor: Colors.orange,
         ),
@@ -105,10 +129,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
       return;
     }
 
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.audio,
-    );
-
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
     final selectedPath = result?.files.single.path;
 
     if (selectedPath != null) {
@@ -118,7 +139,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
     } else if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Impossible de récupérer ce fichier audio.'),
+          content: Text('Impossible de recuperer ce fichier audio.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -153,7 +174,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'L\'accès au microphone est nécessaire pour enregistrer.',
+            'L\'acces au microphone est necessaire pour enregistrer.',
           ),
           backgroundColor: Colors.orange,
         ),
@@ -196,7 +217,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
     if (recordedPath == null || recordedPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Aucun fichier audio n\'a été généré.'),
+          content: Text('Aucun fichier audio n\'a ete genere.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -204,131 +225,135 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
   }
 
   void _saveQuestion() {
-    if (_formKey.currentState!.validate()) {
-      if (_isRecording) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Arrêtez l\'enregistrement avant d\'enregistrer la question.',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      if (_selectedThemeId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner un thème'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      if (_questionType == QuestionType.audio &&
-          (_audioPath == null || _audioPath!.isEmpty)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner un fichier audio'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      final quizProvider = Provider.of<QuizProvider>(context, listen: false);
-
-      List<String> correctAnswers;
-
-      if (_answerType == AnswerType.open) {
-        correctAnswers = _openAnswersController.text
-            .split(';')
-            .map((answer) => answer.trim())
-            .where((answer) => answer.isNotEmpty)
-            .toList();
-
-        if (correctAnswers.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Veuillez entrer au moins une réponse attendue'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-      } else {
-        if (_correctChoiceIndices.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Veuillez sélectionner au moins une bonne réponse'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-
-        correctAnswers = _correctChoiceIndices
-            .map((index) => _choiceControllers[index].text.trim())
-            .where((text) => text.isNotEmpty)
-            .toList();
-      }
-
-      final choices = _answerType == AnswerType.open
-          ? <String>[]
-          : _choiceControllers
-                .map((c) => c.text.trim())
-                .where((text) => text.isNotEmpty)
-                .toList();
-
-      final newQuestion = Question(
-        id: quizProvider.generateId(),
-        text: _questionController.text.trim(),
-        imageUrl: _questionType == QuestionType.image ? _imagePath : null,
-        audioUrl: _questionType == QuestionType.audio ? _audioPath : null,
-        questionType: _questionType,
-        answerType: _answerType,
-        choices: choices,
-        correctAnswers: correctAnswers,
-        themeId: _selectedThemeId!,
-      );
-
-      quizProvider.addQuestion(newQuestion);
-
+    if (_isRecording) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Question créée avec succès !'),
-          backgroundColor: Colors.green,
+          content: Text(
+            'Arretez l\'enregistrement avant d\'enregistrer la question.',
+          ),
+          backgroundColor: Colors.orange,
         ),
       );
-
-      Navigator.pop(context);
+      return;
     }
+
+    if (_selectedThemeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez selectionner un theme'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (_questionType == QuestionType.audio &&
+        (_audioPath == null || _audioPath!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez selectionner un fichier audio'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    List<String> choices = <String>[];
+    List<String> correctAnswers = <String>[];
+
+    if (_answerType == AnswerType.open) {
+      correctAnswers = _openAnswersController.text
+          .split(';')
+          .map((a) => a.trim())
+          .where((a) => a.isNotEmpty)
+          .toList();
+
+      if (correctAnswers.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ajoutez au moins une reponse attendue'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    } else {
+      choices = _choiceControllers
+          .map((c) => c.text.trim())
+          .where((c) => c.isNotEmpty)
+          .toList();
+
+      if (choices.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ajoutez au moins deux choix de reponse'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (_correctChoiceIndices.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selectionnez au moins une bonne reponse'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      correctAnswers = _correctChoiceIndices
+          .where((i) => i >= 0 && i < _choiceControllers.length)
+          .map((i) => _choiceControllers[i].text.trim())
+          .where((c) => c.isNotEmpty)
+          .toList();
+
+      if (correctAnswers.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selectionnez une bonne reponse valide'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    }
+
+    final updated = widget.question.copyWith(
+      text: _questionController.text.trim(),
+      imageUrl: _questionType == QuestionType.image ? _imagePath : null,
+      audioUrl: _questionType == QuestionType.audio ? _audioPath : null,
+      questionType: _questionType,
+      answerType: _answerType,
+      choices: choices,
+      correctAnswers: correctAnswers,
+      themeId: _selectedThemeId,
+    );
+
+    Provider.of<QuizProvider>(context, listen: false).updateQuestion(updated);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Question modifiee avec succes'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: 'Créer une question',
+      title: 'Modifier la question',
       child: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
           final themes = quizProvider.themes;
-
-          if (themes.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: AppSurfaceCard(
-                  child: Text(
-                    'Vous devez d\'abord créer un thème avant de pouvoir ajouter des questions.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            );
-          }
-
           return SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -342,11 +367,10 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                    // Sélection du thème
                     DropdownButtonFormField<String>(
                       initialValue: _selectedThemeId,
                       decoration: InputDecoration(
-                        labelText: 'Thème',
+                        labelText: 'Theme',
                         prefixIcon: const Icon(Icons.category),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -354,12 +378,14 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      items: themes.map((theme) {
-                        return DropdownMenuItem(
-                          value: theme.id,
-                          child: Text(theme.name),
-                        );
-                      }).toList(),
+                      items: themes
+                          .map(
+                            (theme) => DropdownMenuItem<String>(
+                              value: theme.id,
+                              child: Text(theme.name),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (value) {
                         setState(() {
                           _selectedThemeId = value;
@@ -367,14 +393,12 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                       },
                       validator: (value) {
                         if (value == null) {
-                          return 'Veuillez sélectionner un thème';
+                          return 'Veuillez selectionner un theme';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 20),
-
-                    // Type de question
                     const Text(
                       'Type de question',
                       style: TextStyle(
@@ -402,8 +426,8 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                         ),
                       ],
                       selected: {_questionType},
-                      onSelectionChanged: (Set<QuestionType> newSelection) {
-                        final nextType = newSelection.first;
+                      onSelectionChanged: (selection) {
+                        final nextType = selection.first;
                         if (nextType != QuestionType.audio && _isRecording) {
                           unawaited(_stopRecording());
                         }
@@ -414,8 +438,6 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-
-                    // Question text
                     TextFormField(
                       controller: _questionController,
                       keyboardType: TextInputType.multiline,
@@ -439,8 +461,6 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-
-                    // Image picker
                     if (_questionType == QuestionType.image)
                       Column(
                         children: [
@@ -450,23 +470,12 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                             label: Text(
                               _imagePath == null
                                   ? 'Ajouter une image'
-                                  : 'Image sélectionnée',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                                  : 'Image selectionnee',
                             ),
                           ),
                           const SizedBox(height: 20),
                         ],
                       ),
-
-                    // Audio picker
                     if (_questionType == QuestionType.audio)
                       Column(
                         children: [
@@ -476,16 +485,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                             label: Text(
                               _audioPath == null
                                   ? 'Ajouter un fichier audio'
-                                  : 'Audio sélectionné',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                                  : 'Audio selectionne',
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -498,17 +498,8 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                             ),
                             label: Text(
                               _isRecording
-                                  ? 'Arrêter l\'enregistrement'
+                                  ? 'Arreter l\'enregistrement'
                                   : 'Enregistrer un audio',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                                horizontal: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
                             ),
                           ),
                           if (_isRecording) ...[
@@ -532,10 +523,8 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                           const SizedBox(height: 20),
                         ],
                       ),
-
-                    // Type de réponse
                     const Text(
-                      'Type de réponse',
+                      'Type de reponse',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -561,20 +550,24 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                         ),
                       ],
                       selected: {_answerType},
-                      onSelectionChanged: (Set<AnswerType> newSelection) {
+                      onSelectionChanged: (selection) {
                         setState(() {
-                          _answerType = newSelection.first;
+                          _answerType = selection.first;
+                          if (_answerType != AnswerType.open &&
+                              _choiceControllers.length < 2) {
+                            _choiceControllers.add(TextEditingController());
+                            _choiceControllers.add(TextEditingController());
+                          }
                           _correctChoiceIndices.clear();
                         });
                       },
                     ),
                     const SizedBox(height: 20),
-
                     if (_answerType == AnswerType.open)
                       TextFormField(
                         controller: _openAnswersController,
                         decoration: InputDecoration(
-                          labelText: 'Réponses attendues (séparées par ;)',
+                          labelText: 'Reponses attendues (separees par ;)',
                           hintText: 'ex: Paris; paris',
                           prefixIcon: const Icon(Icons.check_circle_outline),
                           border: OutlineInputBorder(
@@ -586,19 +579,17 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                         validator: (value) {
                           if (_answerType == AnswerType.open &&
                               (value == null || value.trim().isEmpty)) {
-                            return 'Veuillez entrer au moins une réponse attendue';
+                            return 'Veuillez entrer au moins une reponse attendue';
                           }
                           return null;
                         },
                       ),
-
-                    // Choix de réponse (si ce n'est pas une question ouverte)
                     if (_answerType != AnswerType.open) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Réponses possibles',
+                            'Reponses possibles',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -641,7 +632,7 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                                 child: TextFormField(
                                   controller: controller,
                                   decoration: InputDecoration(
-                                    hintText: 'Réponse ${index + 1}',
+                                    hintText: 'Reponse ${index + 1}',
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -651,8 +642,10 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                                         : Colors.grey[50],
                                   ),
                                   validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Réponse requise';
+                                    if (_answerType != AnswerType.open &&
+                                        (value == null ||
+                                            value.trim().isEmpty)) {
+                                      return 'Reponse requise';
                                     }
                                     return null;
                                   },
@@ -669,24 +662,12 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                           ),
                         );
                       }),
-                      const SizedBox(height: 10),
-                      Text(
-                        _answerType == AnswerType.singleChoice
-                            ? 'Cochez la bonne réponse'
-                            : 'Cochez toutes les bonnes réponses',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
                     ],
-
                     const SizedBox(height: 40),
                     ElevatedButton(
                       onPressed: _saveQuestion,
                       child: const Text(
-                        'Créer la question',
+                        'Enregistrer',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
