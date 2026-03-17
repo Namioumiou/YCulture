@@ -19,7 +19,16 @@ class MyApp extends StatelessWidget {
         title: 'YCulture',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
-        home: const HomeScreen(),
+        home: Consumer<QuizProvider>(
+          builder: (context, provider, _) {
+            if (!provider.isLoaded) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return const HomeScreen();
+          },
+        ),
       ),
     );
   }

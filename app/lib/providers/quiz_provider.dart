@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/question.dart';
 import '../models/theme.dart';
@@ -9,13 +11,41 @@ class QuizProvider with ChangeNotifier {
   final List<Question> _questions = [];
   final List<QuizResult> _results = [];
   final _uuid = const Uuid();
+  bool _isLoaded = false;
 
+  bool get isLoaded => _isLoaded;
   List<QuizTheme> get themes => List.unmodifiable(_themes);
   List<Question> get questions => List.unmodifiable(_questions);
   List<QuizResult> get results => List.unmodifiable(_results);
 
   QuizProvider() {
-    _initializeDefaultData();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themesJson = prefs.getString('themes');
+    if (themesJson == null) {
+      _initializeDefaultData();
+    } else {
+      final themesList = jsonDecode(themesJson) as List;
+      _themes.addAll(themesList.map((j) => QuizTheme.fromJson(j as Map<String, dynamic>)));
+      final questionsJson = prefs.getString('questions') ?? '[]';
+      final questionsList = jsonDecode(questionsJson) as List;
+      _questions.addAll(questionsList.map((j) => Question.fromJson(j as Map<String, dynamic>)));
+      final resultsJson = prefs.getString('results') ?? '[]';
+      final resultsList = jsonDecode(resultsJson) as List;
+      _results.addAll(resultsList.map((j) => QuizResult.fromJson(j as Map<String, dynamic>)));
+    }
+    _isLoaded = true;
+    notifyListeners();
+  }
+
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themes', jsonEncode(_themes.map((t) => t.toJson()).toList()));
+    await prefs.setString('questions', jsonEncode(_questions.map((q) => q.toJson()).toList()));
+    await prefs.setString('results', jsonEncode(_results.map((r) => r.toJson()).toList()));
   }
 
   void _initializeDefaultData() {
@@ -25,22 +55,7 @@ class QuizProvider with ChangeNotifier {
         id: _uuid.v4(),
         name: 'Culture Générale',
         description: 'Testez vos connaissances générales',
-      ),
-      QuizTheme(
-        id: _uuid.v4(),
-        name: 'Histoire',
-        description: 'Questions sur l\'histoire mondiale',
-      ),
-      QuizTheme(
-        id: _uuid.v4(),
-        name: 'Sciences',
-        description: 'Questions scientifiques',
-      ),
-      QuizTheme(
-        id: _uuid.v4(),
-        name: 'Géographie',
-        description: 'Explorez le monde',
-      ),
+      )
     ]);
 
     // Questions par défaut
@@ -80,6 +95,7 @@ class QuizProvider with ChangeNotifier {
   void addTheme(QuizTheme theme) {
     _themes.add(theme);
     notifyListeners();
+    _saveData();
   }
 
   void updateTheme(QuizTheme theme) {
@@ -87,6 +103,7 @@ class QuizProvider with ChangeNotifier {
     if (index != -1) {
       _themes[index] = theme;
       notifyListeners();
+      _saveData();
     }
   }
 
@@ -94,6 +111,7 @@ class QuizProvider with ChangeNotifier {
     _themes.removeWhere((t) => t.id == themeId);
     _questions.removeWhere((q) => q.themeId == themeId);
     notifyListeners();
+    _saveData();
   }
 
   QuizTheme? getThemeById(String id) {
@@ -108,6 +126,7 @@ class QuizProvider with ChangeNotifier {
   void addQuestion(Question question) {
     _questions.add(question);
     notifyListeners();
+    _saveData();
   }
 
   void updateQuestion(Question question) {
@@ -115,12 +134,14 @@ class QuizProvider with ChangeNotifier {
     if (index != -1) {
       _questions[index] = question;
       notifyListeners();
+      _saveData();
     }
   }
 
   void deleteQuestion(String questionId) {
     _questions.removeWhere((q) => q.id == questionId);
     notifyListeners();
+    _saveData();
   }
 
   List<Question> getQuestionsByTheme(String themeId) {
@@ -131,6 +152,7 @@ class QuizProvider with ChangeNotifier {
   void addResult(QuizResult result) {
     _results.add(result);
     notifyListeners();
+    _saveData();
   }
 
   List<QuizResult> getResultsByTheme(String themeId) {

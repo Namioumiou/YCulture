@@ -11,6 +11,20 @@ class QuizTheme {
     this.iconUrl,
   });
 
+  factory QuizTheme.fromJson(Map<String, dynamic> json) => QuizTheme(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String,
+        iconUrl: json['iconUrl'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'description': description,
+        'iconUrl': iconUrl,
+      };
+
   QuizTheme copyWith({
     String? id,
     String? name,
