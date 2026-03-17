@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/theme.dart';
 import '../models/question.dart';
 import '../providers/quiz_provider.dart';
@@ -20,15 +24,29 @@ class _QuizScreenState extends State<QuizScreen> {
   final Map<int, dynamic> _userAnswers = {};
   List<Question> _questions = [];
   final AudioPlayer _audioPlayer = AudioPlayer();
+  late final StreamSubscription<void> _playerCompleteSubscription;
+  bool _isPlayingAudio = false;
+  String? _playingQuestionId;
 
   @override
   void initState() {
     super.initState();
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isPlayingAudio = false;
+        _playingQuestionId = null;
+      });
+    });
     _loadQuestions();
   }
 
   @override
   void dispose() {
+    _playerCompleteSubscription.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -48,6 +66,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _nextQuestion() {
     if (_currentQuestionIndex < _questions.length - 1) {
+      _stopAudio(resetPlayingQuestion: true);
       setState(() {
         _currentQuestionIndex++;
       });
@@ -58,6 +77,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _previousQuestion() {
     if (_currentQuestionIndex > 0) {
+      _stopAudio(resetPlayingQuestion: true);
       setState(() {
         _currentQuestionIndex--;
       });
@@ -65,6 +85,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _finishQuiz() {
+    _stopAudio(resetPlayingQuestion: true);
     int correctAnswers = 0;
 
     for (int i = 0; i < _questions.length; i++) {
@@ -103,6 +124,81 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _stopAudio({required bool resetPlayingQuestion}) async {
+    await _audioPlayer.stop();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isPlayingAudio = false;
+      if (resetPlayingQuestion) {
+        _playingQuestionId = null;
+      }
+    });
+  }
+
+  Future<void> _toggleAudio(Question question) async {
+    final audioPath = question.audioUrl;
+
+    if (audioPath == null || audioPath.isEmpty) {
+      return;
+    }
+
+    if (!File(audioPath).existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le fichier audio est introuvable sur cet appareil.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      if (_playingQuestionId == question.id) {
+        if (_isPlayingAudio) {
+          await _audioPlayer.pause();
+        } else {
+          await _audioPlayer.resume();
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _isPlayingAudio = !_isPlayingAudio;
+        });
+        return;
+      }
+
+      await _audioPlayer.stop();
+      await _audioPlayer.play(DeviceFileSource(audioPath));
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _playingQuestionId = question.id;
+        _isPlayingAudio = true;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de lire ce fichier audio.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -164,6 +260,9 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildQuestionContent(Question question) {
+    final isCurrentAudioPlaying =
+        _playingQuestionId == question.id && _isPlayingAudio;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -176,16 +275,7 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
         const SizedBox(height: 20),
         if (question.questionType == QuestionType.image && question.imageUrl != null)
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Icon(Icons.image, size: 80, color: Colors.grey),
-            ),
-          ),
+          _buildQuestionImage(question.imageUrl!),
         if (question.questionType == QuestionType.audio && question.audioUrl != null)
           Container(
             padding: const EdgeInsets.all(20),
@@ -197,26 +287,65 @@ class _QuizScreenState extends State<QuizScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.play_arrow, size: 40),
-                  onPressed: () {
-                    // Jouer l'audio (simulation)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Lecture audio (démo)'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
+                  icon: Icon(
+                    isCurrentAudioPlaying ? Icons.pause_circle : Icons.play_circle,
+                    size: 40,
+                  ),
+                  onPressed: () => _toggleAudio(question),
                 ),
                 const SizedBox(width: 20),
-                const Text(
-                  'Cliquez pour écouter',
+                Text(
+                  isCurrentAudioPlaying ? 'Lecture en cours' : 'Cliquez pour écouter',
                   style: TextStyle(fontSize: 16),
                 ),
               ],
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildQuestionImage(String imagePath) {
+    return FutureBuilder(
+      future: XFile(imagePath).readAsBytes(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            height: 220,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Container(
+            height: 220,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                'Impossible de charger l\'image',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+          );
+        }
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.memory(
+            snapshot.data!,
+            height: 220,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+      },
     );
   }
 
