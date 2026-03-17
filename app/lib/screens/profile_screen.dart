@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../models/quiz_result.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 
@@ -255,6 +256,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final levelXp = quizProvider.experiencePointsInCurrentLevel;
             final xpPerLevel = quizProvider.xpPerLevel;
 
+            final recentResults = quizProvider.results.reversed.take(10).toList();
+
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Column(
@@ -350,11 +353,139 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Historique des quizz',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (recentResults.isEmpty)
+                    AppSurfaceCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.history_rounded, color: AppColors.muted, size: 28),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Aucun quizz effectué pour l\'instant.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: AppColors.muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    AppSurfaceCard(
+                      child: Column(
+                        children: [
+                          for (int i = 0; i < recentResults.length; i++) ...[
+                            if (i > 0)
+                              const Divider(height: 1, color: AppColors.border),
+                            _QuizHistoryRow(
+                              result: recentResults[i],
+                              themeName: quizProvider
+                                      .getThemeById(recentResults[i].themeId)
+                                      ?.name ??
+                                  'Thème supprimé',
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                 ],
               ),
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _QuizHistoryRow extends StatelessWidget {
+  final QuizResult result;
+  final String themeName;
+
+  const _QuizHistoryRow({required this.result, required this.themeName});
+
+  Color _scoreColor(double percentage) {
+    if (percentage >= 80) return AppColors.primary;
+    if (percentage >= 50) return AppColors.secondary;
+    return AppColors.accent;
+  }
+
+  String _formatDate(DateTime date) {
+    final d = date.toLocal();
+    final day = d.day.toString().padLeft(2, '0');
+    final month = d.month.toString().padLeft(2, '0');
+    final hour = d.hour.toString().padLeft(2, '0');
+    final minute = d.minute.toString().padLeft(2, '0');
+    return '$day/$month/${d.year} à $hour:$minute';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = result.percentage;
+    final color = _scoreColor(pct);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '${pct.round()}%',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  themeName,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(result.completedAt),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${result.correctAnswers}/${result.totalQuestions}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
       ),
     );
   }
