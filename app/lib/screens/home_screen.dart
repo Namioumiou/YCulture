@@ -91,6 +91,11 @@ class HomeScreen extends StatelessWidget {
                               label: '${quizProvider.results.length} résultats',
                               color: AppColors.accent,
                             ),
+                            AppInfoChip(
+                              icon: Icons.stars_rounded,
+                              label: 'Niv. ${quizProvider.level}',
+                              color: AppColors.ink,
+                            ),
                           ],
                         ),
                       ],
@@ -128,21 +133,6 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _MenuButton(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Mon profil',
-                    subtitle: 'Modifier votre avatar utilisateur',
-                    color: AppColors.ink,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _MenuButton(
                     icon: Icons.edit_note_rounded,
                     label: 'Créer une question',
                     subtitle: 'Texte, image ou audio',
@@ -152,6 +142,21 @@ class HomeScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const CreateQuestionScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _MenuButton(
+                    icon: Icons.person_outline_rounded,
+                    label: 'Mon profil',
+                    subtitle: 'Modifier votre avatar utilisateur',
+                    color: AppColors.ink,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
                         ),
                       );
                     },

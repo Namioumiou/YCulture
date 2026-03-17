@@ -79,7 +79,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _openAvatarPicker(String? selectedAvatarId) async {
+  int _requiredLevelForAvatarIndex(int index) {
+    return 1 + (index ~/ 2);
+  }
+
+  Future<void> _openAvatarPicker(String? selectedAvatarId, int userLevel) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -101,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Selectionnez un avatar depuis la banque integree.',
+                    'Certains avatars se debloquent avec votre niveau.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.muted,
                         ),
@@ -120,10 +124,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     itemBuilder: (context, index) {
                       final avatar = _avatarBank[index];
                       final isSelected = avatar.id == selectedAvatarId;
+                      final requiredLevel = _requiredLevelForAvatarIndex(index);
+                      final isUnlocked = userLevel >= requiredLevel;
 
                       return InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () async {
+                          if (!isUnlocked) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Cet avatar se debloque au niveau $requiredLevel.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
                           Navigator.of(modalContext).pop();
                           await _selectAvatar(avatar.id);
                         },
@@ -142,9 +159,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             clipBehavior: Clip.antiAlias,
-                            child: Image.asset(
-                              avatar.imagePath,
-                              fit: BoxFit.cover,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Opacity(
+                                  opacity: isUnlocked ? 1 : 0.32,
+                                  child: Image.asset(
+                                    avatar.imagePath,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                if (!isUnlocked)
+                                  Container(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Niv. $requiredLevel',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
@@ -200,6 +251,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             final selectedAvatarId = quizProvider.profileAvatarId;
             final selectedPreset = _resolveAvatar(selectedAvatarId);
+            final level = quizProvider.level;
+            final levelXp = quizProvider.experiencePointsInCurrentLevel;
+            final xpPerLevel = quizProvider.xpPerLevel;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -209,26 +263,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   AppSurfaceCard(
                     child: Column(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.2),
-                                blurRadius: 24,
-                                offset: const Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 64,
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.14),
-                            child: ClipOval(
-                              child: Image.asset(
-                                selectedPreset.imagePath,
-                                width: 128,
-                                height: 128,
-                                fit: BoxFit.cover,
+                        GestureDetector(
+                          onTap: () => _openAvatarPicker(selectedAvatarId, level),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 64,
+                              backgroundColor: AppColors.primary.withValues(alpha: 0.14),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  selectedPreset.imagePath,
+                                  width: 128,
+                                  height: 128,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                           ),
@@ -238,23 +295,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           'Mon profil',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Choisissez un avatar depuis la banque integree a l\'application.',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.muted,
-                              ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
+                        const SizedBox(height: 12),
+                        Container(
                           width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _openAvatarPicker(selectedAvatarId),
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Modifier l\'avatar'),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.stars_rounded,
+                                    color: AppColors.secondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Niveau $level',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '$levelXp/$xpPerLevel XP',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(color: AppColors.muted),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(999),
+                                child: LinearProgressIndicator(
+                                  minHeight: 9,
+                                  value: levelXp / xpPerLevel,
+                                  backgroundColor: AppColors.border,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),

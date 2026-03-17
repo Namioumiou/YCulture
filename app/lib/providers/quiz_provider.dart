@@ -7,10 +7,10 @@ import '../models/theme.dart';
 import '../models/quiz_result.dart';
 
 class QuizProvider with ChangeNotifier {
-  static const int _xpPerLevel = 100;
-  static const int _xpPerCorrectAnswer = 20;
-  static const int _xpParticipationBonus = 10;
-  static const int _xpPerfectQuizBonus = 40;
+  static const int _xpPerLevel = 150;
+  static const int _xpPerCorrectAnswer = 18;
+  static const int _xpParticipationBonus = 8;
+  static const int _xpPerfectQuizBonus = 30;
 
   final List<QuizTheme> _themes = [];
   final List<Question> _questions = [];
