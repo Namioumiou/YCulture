@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import '../models/question.dart';
 import '../providers/quiz_provider.dart';
+import '../ui/app_theme.dart';
 
 class EditQuestionScreen extends StatefulWidget {
   final Question question;
@@ -348,22 +349,24 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Modifier la question'),
-        centerTitle: true,
-      ),
-      body: Consumer<QuizProvider>(
+    return AppScaffold(
+      title: 'Modifier la question',
+      child: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
           final themes = quizProvider.themes;
           return SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const SizedBox(height: 20),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                     DropdownButtonFormField<String>(
                       initialValue: _selectedThemeId,
                       decoration: InputDecoration(
@@ -661,20 +664,15 @@ class _EditQuestionScreenState extends State<EditQuestionScreen> {
                     const SizedBox(height: 40),
                     ElevatedButton(
                       onPressed: _saveQuestion,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: const Text(
-                        'Enregistrer les modifications',
+                        'Enregistrer',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                        ],
                       ),
                     ),
                   ],

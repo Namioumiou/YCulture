@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import '../models/question.dart';
 import '../providers/quiz_provider.dart';
+import '../ui/app_theme.dart';
 
 class CreateQuestionScreen extends StatefulWidget {
   const CreateQuestionScreen({super.key});
@@ -308,12 +309,9 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Créer une question'),
-        centerTitle: true,
-      ),
-      body: Consumer<QuizProvider>(
+    return AppScaffold(
+      title: 'Créer une question',
+      child: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
           final themes = quizProvider.themes;
 
@@ -321,10 +319,11 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text(
-                  'Vous devez d\'abord créer un thème avant de pouvoir ajouter des questions.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                child: AppSurfaceCard(
+                  child: Text(
+                    'Vous devez d\'abord créer un thème avant de pouvoir ajouter des questions.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             );
@@ -332,12 +331,17 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
 
           return SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const SizedBox(height: 20),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                     // Sélection du thème
                     DropdownButtonFormField<String>(
                       initialValue: _selectedThemeId,
@@ -679,20 +683,15 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                     const SizedBox(height: 40),
                     ElevatedButton(
                       onPressed: _saveQuestion,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: const Text(
                         'Créer la question',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                        ],
                       ),
                     ),
                   ],

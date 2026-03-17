@@ -1,112 +1,209 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/theme.dart';
-import '../models/quiz_result.dart';
-import '../providers/quiz_provider.dart';
 
-class ResultScreen extends StatelessWidget {
+import '../models/question.dart';
+import '../models/quiz_result.dart';
+import '../models/theme.dart';
+import '../providers/quiz_provider.dart';
+import '../ui/app_theme.dart';
+
+class ResultScreen extends StatefulWidget {
   final QuizTheme theme;
   final int totalQuestions;
   final int correctAnswers;
+  final List<Question> questions;
+  final Map<int, dynamic> userAnswers;
 
   const ResultScreen({
     super.key,
     required this.theme,
     required this.totalQuestions,
     required this.correctAnswers,
+    required this.questions,
+    required this.userAnswers,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final percentage = (correctAnswers / totalQuestions * 100).round();
-    
-    // Sauvegarder le résultat
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final quizProvider = Provider.of<QuizProvider>(context, listen: false);
-      quizProvider.addResult(
+      if (!mounted) {
+        return;
+      }
+
+      Provider.of<QuizProvider>(context, listen: false).addResult(
         QuizResult(
-          themeId: theme.id,
-          totalQuestions: totalQuestions,
-          correctAnswers: correctAnswers,
+          themeId: widget.theme.id,
+          totalQuestions: widget.totalQuestions,
+          correctAnswers: widget.correctAnswers,
           completedAt: DateTime.now(),
         ),
       );
     });
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Résultats'),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
+  @override
+  Widget build(BuildContext context) {
+    final percentage = (widget.correctAnswers / widget.totalQuestions * 100)
+        .round();
+    final ratio = widget.correctAnswers / widget.totalQuestions;
+    final palette = _paletteForPercentage(percentage);
+    final reviews = _buildReviews();
+
+    return AppScaffold(
+      title: 'Résultats',
+      automaticallyImplyLeading: false,
+      child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                _getEmojiForPercentage(percentage),
-                style: const TextStyle(fontSize: 100),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Quiz terminé !',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+              AppSurfaceCard(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 172,
+                      height: 172,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: palette),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$percentage%',
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(color: AppColors.ink),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Quiz terminé',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.theme.name,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 18),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 12,
+                        value: ratio,
+                        backgroundColor: AppColors.border,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          palette.first,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                theme.name,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.grey[600],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Correctes',
+                      value: widget.correctAnswers.toString(),
+                      color: const Color(0xFF14B86A),
+                      icon: Icons.check_circle_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Incorrectes',
+                      value: (widget.totalQuestions - widget.correctAnswers)
+                          .toString(),
+                      color: AppColors.accent,
+                      icon: Icons.remove_circle_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _StatCard(
+                      label: 'Total',
+                      value: widget.totalQuestions.toString(),
+                      color: AppColors.primary,
+                      icon: Icons.quiz_rounded,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              AppSurfaceCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Corrigé détaillé',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Comparez votre réponse avec la bonne réponse pour chaque question.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 18),
+                    ...reviews.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final review = entry.value;
+
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index == reviews.length - 1 ? 0 : 14,
+                        ),
+                        child: _QuestionReviewCard(
+                          index: index + 1,
+                          review: review,
+                        ),
+                      );
+                    }),
+                  ],
                 ),
               ),
-              const SizedBox(height: 40),
-              _buildScoreCard(percentage),
-              const SizedBox(height: 40),
-              _buildStatsRow(),
-              const SizedBox(height: 60),
-              ElevatedButton(
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Retour à l\'accueil',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                icon: const Icon(Icons.home_rounded),
+                label: const Text('Retour à l\'accueil'),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(
+              OutlinedButton.icon(
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).pop();
                 },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Choisir un autre thème',
-                  style: TextStyle(fontSize: 16),
-                ),
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: const Text('Choisir un autre thème'),
               ),
             ],
           ),
@@ -115,141 +212,271 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  String _getEmojiForPercentage(int percentage) {
-    if (percentage == 100) {
-      return '🎯'; // Parfait
-    } else if (percentage >= 90) {
-      return '🏆'; // Excellent
-    } else if (percentage >= 80) {
-      return '⭐'; // Très bien
-    } else if (percentage >= 70) {
-      return '👏'; // Bien
-    } else if (percentage >= 60) {
-      return '👍'; // Pas mal
-    } else if (percentage >= 50) {
-      return '🙂'; // Moyen
-    } else if (percentage >= 40) {
-      return '😐'; // Peut mieux faire
-    } else {
-      return '📚'; // Continuez à apprendre
+  List<Color> _paletteForPercentage(int percentage) {
+    if (percentage >= 80) {
+      return const [Color(0xFF14B86A), Color(0xFF60D394)];
     }
+    if (percentage >= 60) {
+      return const [AppColors.primary, Color(0xFF5AA9FF)];
+    }
+    if (percentage >= 40) {
+      return const [AppColors.accent, Color(0xFFFFB26B)];
+    }
+    return const [Color(0xFFD94F70), Color(0xFFF08AA0)];
   }
 
-  Widget _buildScoreCard(int percentage) {
-    Color color;
-    String message;
-    IconData icon;
+  List<_QuestionReview> _buildReviews() {
+    return List<_QuestionReview>.generate(widget.questions.length, (index) {
+      final question = widget.questions[index];
+      final userAnswer = widget.userAnswers[index];
+      final isCorrect = _isAnswerCorrect(question, userAnswer);
 
-    if (percentage >= 80) {
-      color = Colors.green;
-      message = 'Excellent !';
-      icon = Icons.star;
-    } else if (percentage >= 60) {
-      color = Colors.lightGreen;
-      message = 'Bien joué !';
-      icon = Icons.thumb_up;
-    } else if (percentage >= 40) {
-      color = Colors.orange;
-      message = 'Pas mal !';
-      icon = Icons.sentiment_satisfied;
-    } else {
-      color = Colors.red;
-      message = 'Continuez à vous entraîner';
-      icon = Icons.sentiment_dissatisfied;
+      return _QuestionReview(
+        question: question,
+        userAnswerLabel: _formatAnswer(question, userAnswer),
+        correctAnswerLabel: _formatCorrectAnswer(question),
+        isCorrect: isCorrect,
+      );
+    });
+  }
+
+  bool _isAnswerCorrect(Question question, dynamic userAnswer) {
+    if (userAnswer == null) {
+      return false;
     }
 
+    if (question.answerType == AnswerType.multipleChoice) {
+      final userSet = Set<String>.from(userAnswer as List);
+      final correctSet = Set<String>.from(question.correctAnswers);
+      return userSet.containsAll(correctSet) && correctSet.containsAll(userSet);
+    }
+
+    if (question.answerType == AnswerType.singleChoice) {
+      return question.correctAnswers.contains(userAnswer);
+    }
+
+    final answer = (userAnswer as String).trim().toLowerCase();
+    return question.correctAnswers.any(
+      (correct) => correct.trim().toLowerCase() == answer,
+    );
+  }
+
+  String _formatAnswer(Question question, dynamic answer) {
+    if (answer == null) {
+      return 'Aucune réponse';
+    }
+
+    if (question.answerType == AnswerType.multipleChoice) {
+      final answers = List<String>.from(answer as List);
+      if (answers.isEmpty) {
+        return 'Aucune réponse';
+      }
+      return answers.join(', ');
+    }
+
+    final label = answer.toString().trim();
+    if (label.isEmpty) {
+      return 'Aucune réponse';
+    }
+    return label;
+  }
+
+  String _formatCorrectAnswer(Question question) {
+    if (question.correctAnswers.isEmpty) {
+      return 'Aucune réponse définie';
+    }
+    return question.correctAnswers.join(', ');
+  }
+}
+
+class _QuestionReview {
+  final Question question;
+  final String userAnswerLabel;
+  final String correctAnswerLabel;
+  final bool isCorrect;
+
+  const _QuestionReview({
+    required this.question,
+    required this.userAnswerLabel,
+    required this.correctAnswerLabel,
+    required this.isCorrect,
+  });
+}
+
+class _QuestionReviewCard extends StatelessWidget {
+  final int index;
+  final _QuestionReview review;
+
+  const _QuestionReviewCard({required this.index, required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = review.isCorrect
+        ? const Color(0xFF14B86A)
+        : const Color(0xFFD94F70);
+    final statusIcon = review.isCorrect
+        ? Icons.check_circle_rounded
+        : Icons.cancel_rounded;
+    final statusLabel = review.isCorrect ? 'Correct' : 'Incorrect';
+
     return Container(
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color, width: 3),
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(icon, size: 60, color: color),
-          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Question $index',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 16, color: statusColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      statusLabel,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
-            message,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            review.question.text,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 14),
+          _AnswerComparisonRow(
+            label: 'Votre réponse',
+            value: review.userAnswerLabel,
+            color: review.isCorrect
+                ? const Color(0xFF14B86A)
+                : AppColors.accent,
+            icon: review.isCorrect
+                ? Icons.verified_rounded
+                : Icons.person_rounded,
           ),
           const SizedBox(height: 10),
-          Text(
-            '$percentage%',
-            style: TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.bold,
-              color: color,
+          _AnswerComparisonRow(
+            label: 'Bonne réponse',
+            value: review.correctAnswerLabel,
+            color: const Color(0xFF14B86A),
+            icon: Icons.lightbulb_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnswerComparisonRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _AnswerComparisonRow({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: color),
+                ),
+                const SizedBox(height: 4),
+                Text(value, style: Theme.of(context).textTheme.bodyMedium),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Correctes',
-            correctAnswers.toString(),
-            Colors.green,
-            Icons.check_circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Incorrectes',
-            (totalQuestions - correctAnswers).toString(),
-            Colors.red,
-            Icons.cancel,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Total',
-            totalQuestions.toString(),
-            Colors.blue,
-            Icons.quiz,
-          ),
-        ),
-      ],
-    );
-  }
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 30),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(color: color),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[700],
-            ),
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.muted),
           ),
         ],
       ),
