@@ -28,6 +28,8 @@ class ResultScreen extends StatefulWidget {
 }
 
 class _ResultScreenState extends State<ResultScreen> {
+  ExperienceGain? _experienceGain;
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +38,10 @@ class _ResultScreenState extends State<ResultScreen> {
         return;
       }
 
-      Provider.of<QuizProvider>(context, listen: false).addResult(
+      final experienceGain = Provider.of<QuizProvider>(
+        context,
+        listen: false,
+      ).addResult(
         QuizResult(
           themeId: widget.theme.id,
           totalQuestions: widget.totalQuestions,
@@ -44,11 +49,20 @@ class _ResultScreenState extends State<ResultScreen> {
           completedAt: DateTime.now(),
         ),
       );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _experienceGain = experienceGain;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final quizProvider = context.watch<QuizProvider>();
     final percentage = (widget.correctAnswers / widget.totalQuestions * 100)
         .round();
     final ratio = widget.correctAnswers / widget.totalQuestions;
@@ -154,6 +168,53 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ],
               ),
+              if (_experienceGain != null) ...[
+                const SizedBox(height: 20),
+                AppSurfaceCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Progression',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '+${_experienceGain!.gainedExperiencePoints} XP',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(color: AppColors.primary),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _experienceGain!.didLevelUp
+                            ? 'Bravo ! Niveau ${_experienceGain!.currentLevel} atteint.'
+                            : 'Niveau actuel: ${quizProvider.level}',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 10,
+                          value: quizProvider.experiencePointsInCurrentLevel /
+                              quizProvider.xpPerLevel,
+                          backgroundColor: AppColors.border,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.secondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${quizProvider.experiencePointsInCurrentLevel}/${quizProvider.xpPerLevel} XP vers le niveau suivant',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.muted,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               AppSurfaceCard(
                 child: Column(
