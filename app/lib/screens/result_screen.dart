@@ -6,6 +6,7 @@ import '../models/quiz_result.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
+import 'quiz_screen.dart';
 
 class ResultScreen extends StatefulWidget {
   final QuizTheme theme;
@@ -251,6 +252,18 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => QuizScreen(theme: widget.theme),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('Refaire le quiz'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
                 onPressed: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
