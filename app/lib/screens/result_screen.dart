@@ -14,6 +14,7 @@ class ResultScreen extends StatefulWidget {
   final int correctAnswers;
   final List<Question> questions;
   final Map<int, dynamic> userAnswers;
+  final bool isHistoryView;
 
   const ResultScreen({
     super.key,
@@ -22,6 +23,7 @@ class ResultScreen extends StatefulWidget {
     required this.correctAnswers,
     required this.questions,
     required this.userAnswers,
+    this.isHistoryView = false,
   });
 
   @override
@@ -34,31 +36,33 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
+    if (!widget.isHistoryView) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
 
-      final experienceGain = Provider.of<QuizProvider>(
-        context,
-        listen: false,
-      ).addResult(
-        QuizResult(
-          themeId: widget.theme.id,
-          totalQuestions: widget.totalQuestions,
-          correctAnswers: widget.correctAnswers,
-          completedAt: DateTime.now(),
-        ),
-      );
+        final experienceGain = Provider.of<QuizProvider>(
+          context,
+          listen: false,
+        ).addResult(
+          QuizResult(
+            themeId: widget.theme.id,
+            totalQuestions: widget.totalQuestions,
+            correctAnswers: widget.correctAnswers,
+            completedAt: DateTime.now(),
+          ),
+        );
 
-      if (!mounted) {
-        return;
-      }
+        if (!mounted) {
+          return;
+        }
 
-      setState(() {
-        _experienceGain = experienceGain;
+        setState(() {
+          _experienceGain = experienceGain;
+        });
       });
-    });
+    }
   }
 
   @override
@@ -216,59 +220,66 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
-              AppSurfaceCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Corrigé détaillé',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Comparez votre réponse avec la bonne réponse pour chaque question.',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
-                    ),
-                    const SizedBox(height: 18),
-                    ...reviews.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final review = entry.value;
+              if (!widget.isHistoryView && reviews.isNotEmpty) ...[  
+                const SizedBox(height: 20),
+                AppSurfaceCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Corrigé détaillé',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comparez votre réponse avec la bonne réponse pour chaque question.',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                      ),
+                      const SizedBox(height: 18),
+                      ...reviews.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final review = entry.value;
 
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          bottom: index == reviews.length - 1 ? 0 : 14,
-                        ),
-                        child: _QuestionReviewCard(
-                          index: index + 1,
-                          review: review,
-                        ),
-                      );
-                    }),
-                  ],
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index == reviews.length - 1 ? 0 : 14,
+                          ),
+                          child: _QuestionReviewCard(
+                            index: index + 1,
+                            review: review,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (_) => QuizScreen(theme: widget.theme),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.replay_rounded),
-                label: const Text('Refaire le quiz'),
-              ),
-              const SizedBox(height: 12),
+              if (!widget.isHistoryView)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => QuizScreen(theme: widget.theme),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.replay_rounded),
+                  label: const Text('Refaire le quiz'),
+                ),
+              if (!widget.isHistoryView) const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  if (widget.isHistoryView) {
+                    Navigator.of(context).pop();
+                  } else {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
                 },
-                icon: const Icon(Icons.home_rounded),
-                label: const Text('Retour à l\'accueil'),
+                icon: Icon(widget.isHistoryView ? Icons.arrow_back_rounded : Icons.home_rounded),
+                label: Text(widget.isHistoryView ? 'Retour' : 'Retour à l\'accueil'),
               ),
               const SizedBox(height: 12),
             ],

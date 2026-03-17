@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/quiz_result.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
+import 'result_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -393,6 +394,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       .getThemeById(recentResults[i].themeId)
                                       ?.name ??
                                   'Thème supprimé',
+                              onTap: () {
+                                final theme = quizProvider.getThemeById(recentResults[i].themeId);
+                                if (theme == null) return;
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ResultScreen(
+                                      theme: theme,
+                                      totalQuestions: recentResults[i].totalQuestions,
+                                      correctAnswers: recentResults[i].correctAnswers,
+                                      questions: const [],
+                                      userAnswers: const {},
+                                      isHistoryView: true,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ],
@@ -411,8 +428,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _QuizHistoryRow extends StatelessWidget {
   final QuizResult result;
   final String themeName;
+  final VoidCallback? onTap;
 
-  const _QuizHistoryRow({required this.result, required this.themeName});
+  const _QuizHistoryRow({required this.result, required this.themeName, this.onTap});
 
   Color _scoreColor(double percentage) {
     if (percentage >= 80) return AppColors.primary;
@@ -433,7 +451,10 @@ class _QuizHistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = result.percentage;
     final color = _scoreColor(pct);
-    return Padding(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       child: Row(
         children: [
@@ -487,6 +508,7 @@ class _QuizHistoryRow extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
