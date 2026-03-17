@@ -11,9 +11,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'YCulture',
-      child: SafeArea(
+    return Scaffold(
+      body: AppBackground(
+        child: SafeArea(
         child: Consumer<QuizProvider>(
           builder: (context, quizProvider, child) {
             return SingleChildScrollView(
@@ -126,6 +126,7 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           },
+          ),
         ),
       ),
     );

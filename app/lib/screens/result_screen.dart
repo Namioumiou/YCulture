@@ -197,14 +197,6 @@ class _ResultScreenState extends State<ResultScreen> {
                 label: const Text('Retour à l\'accueil'),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
-                },
-                icon: const Icon(Icons.restart_alt_rounded),
-                label: const Text('Choisir un autre thème'),
-              ),
             ],
           ),
         ),
