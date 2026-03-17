@@ -7,7 +7,9 @@ import '../models/theme.dart';
 import '../models/quiz_result.dart';
 
 class QuizProvider with ChangeNotifier {
-  static const int _xpPerLevel = 150;
+  static const int _xpSystemVersion = 2;
+  static const int _baseXpPerLevel = 150;
+  static const int _xpPerLevelIncrement = 50;
   static const int _xpPerCorrectAnswer = 18;
   static const int _xpParticipationBonus = 8;
   static const int _xpPerfectQuizBonus = 30;
@@ -26,9 +28,10 @@ class QuizProvider with ChangeNotifier {
   List<QuizResult> get results => List.unmodifiable(_results);
   String? get profileAvatarId => _profileAvatarId;
   int get experiencePoints => _experiencePoints;
-  int get xpPerLevel => _xpPerLevel;
-  int get level => (_experiencePoints ~/ _xpPerLevel) + 1;
-  int get experiencePointsInCurrentLevel => _experiencePoints % _xpPerLevel;
+  int get xpPerLevel => _xpRequiredForLevel(level);
+  int get level => _getLevelProgress(_experiencePoints).level;
+  int get experiencePointsInCurrentLevel =>
+      _getLevelProgress(_experiencePoints).experiencePointsInCurrentLevel;
 
   QuizProvider() {
     _loadData();
@@ -38,6 +41,14 @@ class QuizProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _profileAvatarId = prefs.getString('profile_avatar_id');
     _experiencePoints = prefs.getInt('experience_points') ?? 0;
+    final storedXpSystemVersion = prefs.getInt('xp_system_version') ?? 1;
+    if (storedXpSystemVersion < _xpSystemVersion) {
+      _experiencePoints = _migrateExperiencePoints(
+        legacyExperiencePoints: _experiencePoints,
+      );
+      await prefs.setInt('experience_points', _experiencePoints);
+      await prefs.setInt('xp_system_version', _xpSystemVersion);
+    }
     final themesJson = prefs.getString('themes');
     if (themesJson == null) {
       _initializeDefaultData();
@@ -61,6 +72,7 @@ class QuizProvider with ChangeNotifier {
     await prefs.setString('questions', jsonEncode(_questions.map((q) => q.toJson()).toList()));
     await prefs.setString('results', jsonEncode(_results.map((r) => r.toJson()).toList()));
     await prefs.setInt('experience_points', _experiencePoints);
+    await prefs.setInt('xp_system_version', _xpSystemVersion);
     if (_profileAvatarId == null || _profileAvatarId!.isEmpty) {
       await prefs.remove('profile_avatar_id');
     } else {
@@ -207,6 +219,54 @@ class QuizProvider with ChangeNotifier {
     return gain;
   }
 
+  int _xpRequiredForLevel(int currentLevel) {
+    return _baseXpPerLevel + ((currentLevel - 1) * _xpPerLevelIncrement);
+  }
+
+  int _totalExperienceRequiredToReachLevel(int targetLevel) {
+    if (targetLevel <= 1) {
+      return 0;
+    }
+
+    final completedLevels = targetLevel - 1;
+    return (completedLevels *
+            ((2 * _baseXpPerLevel) +
+                ((completedLevels - 1) * _xpPerLevelIncrement))) ~/
+        2;
+  }
+
+  _LevelProgress _getLevelProgress(int totalExperiencePoints) {
+    var currentLevel = 1;
+    var remainingExperiencePoints = totalExperiencePoints;
+
+    while (remainingExperiencePoints >= _xpRequiredForLevel(currentLevel)) {
+      remainingExperiencePoints -= _xpRequiredForLevel(currentLevel);
+      currentLevel++;
+    }
+
+    return _LevelProgress(
+      level: currentLevel,
+      experiencePointsInCurrentLevel: remainingExperiencePoints,
+    );
+  }
+
+  int _migrateExperiencePoints({
+    required int legacyExperiencePoints,
+  }) {
+    final legacyLevel = (legacyExperiencePoints ~/ _baseXpPerLevel) + 1;
+    final legacyExperiencePointsInCurrentLevel =
+        legacyExperiencePoints % _baseXpPerLevel;
+    final migratedLevelBaseExperience =
+        _totalExperienceRequiredToReachLevel(legacyLevel);
+    final migratedXpPerLevel = _xpRequiredForLevel(legacyLevel);
+    final migratedLevelProgress =
+        ((legacyExperiencePointsInCurrentLevel / _baseXpPerLevel) *
+                migratedXpPerLevel)
+            .round();
+
+    return migratedLevelBaseExperience + migratedLevelProgress;
+  }
+
   List<QuizResult> getResultsByTheme(String themeId) {
     return _results.where((r) => r.themeId == themeId).toList();
   }
@@ -242,4 +302,14 @@ class ExperienceGain {
   });
 
   bool get didLevelUp => currentLevel > previousLevel;
+}
+
+class _LevelProgress {
+  final int level;
+  final int experiencePointsInCurrentLevel;
+
+  const _LevelProgress({
+    required this.level,
+    required this.experiencePointsInCurrentLevel,
+  });
 }

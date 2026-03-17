@@ -151,7 +151,7 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.person_outline_rounded,
                     label: 'Mon profil',
                     subtitle: 'Modifier votre avatar utilisateur',
-                    color: AppColors.ink,
+                    color: const Color.fromARGB(255, 31, 139, 206),
                     onPressed: () {
                       Navigator.push(
                         context,
