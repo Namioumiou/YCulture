@@ -1,9 +1,14 @@
-/// The outcome of a completed quiz session.
+/// Résultat d'une session de quiz complétée.
+///
+/// Stocké dans l'historique de l'utilisateur (10 derniers résultats affichés).
 class QuizResult {
-  /// ID of the [QuizTheme] that was played.
+  /// Identifiant du [QuizTheme] joué.
   final String themeId;
+
   final int totalQuestions;
   final int correctAnswers;
+
+  /// Horodatage de la fin du quiz (heure locale).
   final DateTime completedAt;
 
   QuizResult({
@@ -13,9 +18,10 @@ class QuizResult {
     required this.completedAt,
   });
 
-  /// Score as a percentage in [0, 100].
+  /// Score exprimé en pourcentage, dans l'intervalle [0, 100].
   double get percentage => (correctAnswers / totalQuestions) * 100;
 
+  /// Construit un [QuizResult] depuis un objet JSON stocké dans [SharedPreferences].
   factory QuizResult.fromJson(Map<String, dynamic> json) => QuizResult(
         themeId: json['themeId'] as String,
         totalQuestions: json['totalQuestions'] as int,
@@ -23,6 +29,7 @@ class QuizResult {
         completedAt: DateTime.parse(json['completedAt'] as String),
       );
 
+  /// Sérialise le résultat en JSON pour la persistance locale.
   Map<String, dynamic> toJson() => {
         'themeId': themeId,
         'totalQuestions': totalQuestions,
