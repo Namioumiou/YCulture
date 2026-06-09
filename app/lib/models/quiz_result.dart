@@ -1,4 +1,6 @@
+/// The outcome of a completed quiz session.
 class QuizResult {
+  /// ID of the [QuizTheme] that was played.
   final String themeId;
   final int totalQuestions;
   final int correctAnswers;
@@ -11,6 +13,7 @@ class QuizResult {
     required this.completedAt,
   });
 
+  /// Score as a percentage in [0, 100].
   double get percentage => (correctAnswers / totalQuestions) * 100;
 
   factory QuizResult.fromJson(Map<String, dynamic> json) => QuizResult(

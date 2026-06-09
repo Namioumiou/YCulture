@@ -1,7 +1,10 @@
+/// A category that groups related [Question]s together.
 class QuizTheme {
   final String id;
   final String name;
   final String description;
+
+  /// Optional path to a custom icon image for this theme.
   final String? iconUrl;
 
   QuizTheme({

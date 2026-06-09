@@ -218,19 +218,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return AppScaffold(
       title: 'Profil',
       child: SafeArea(
-        child: Consumer<QuizProvider>(
-          builder: (context, quizProvider, _) {
+        child: Builder(
+          builder: (context) {
             if (_avatarBank.isEmpty) {
               return Center(
                 child: AppSurfaceCard(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.hide_image_outlined,
-                        size: 42,
-                        color: AppColors.muted,
-                      ),
+                      const Icon(Icons.hide_image_outlined, size: 42, color: AppColors.muted),
                       const SizedBox(height: 16),
                       Text(
                         'Aucun avatar disponible',
@@ -240,9 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Ajoutez des images dans assets/avatars pour les afficher ici.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.muted,
-                            ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -251,13 +245,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
 
-            final selectedAvatarId = quizProvider.profileAvatarId;
+            // Granular selectors: each rebuilds only its own piece of UI.
+            final selectedAvatarId = context.select((QuizProvider p) => p.profileAvatarId);
             final selectedPreset = _resolveAvatar(selectedAvatarId);
-            final level = quizProvider.level;
-            final levelXp = quizProvider.experiencePointsInCurrentLevel;
-            final xpPerLevel = quizProvider.xpPerLevel;
-
-            final recentResults = quizProvider.results.reversed.take(10).toList();
+            final level = context.select((QuizProvider p) => p.level);
+            final levelXp = context.select((QuizProvider p) => p.experiencePointsInCurrentLevel);
+            final xpPerLevel = context.select((QuizProvider p) => p.xpPerLevel);
+            final recentResults = context.select(
+              (QuizProvider p) => p.results.reversed.take(10).toList(),
+            );
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -390,12 +386,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const Divider(height: 1, color: AppColors.border),
                             _QuizHistoryRow(
                               result: recentResults[i],
-                              themeName: quizProvider
+                              themeName: context
+                                      .read<QuizProvider>()
                                       .getThemeById(recentResults[i].themeId)
                                       ?.name ??
                                   'Thème supprimé',
                               onTap: () {
-                                final theme = quizProvider.getThemeById(recentResults[i].themeId);
+                                final theme = context.read<QuizProvider>().getThemeById(recentResults[i].themeId);
                                 if (theme == null) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(

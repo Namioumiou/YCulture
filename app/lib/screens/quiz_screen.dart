@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/question.dart';
@@ -329,46 +328,28 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildQuestionImage(String imagePath) {
-    return FutureBuilder(
-      future: XFile(imagePath).readAsBytes(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            height: 220,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Container(
-            height: 220,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Center(
-              child: Text(
-                'Impossible de charger l\'image',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ),
-          );
-        }
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Image.memory(
-            snapshot.data!,
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.file(
+        File(imagePath),
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        // Uses Flutter's image cache — no disk re-read on each setState.
+        errorBuilder: (_, _, _) => Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
           ),
-        );
-      },
+          child: const Center(
+            child: Text(
+              'Impossible de charger l\'image',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

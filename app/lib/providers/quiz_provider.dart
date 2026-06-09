@@ -6,6 +6,10 @@ import '../models/question.dart';
 import '../models/theme.dart';
 import '../models/quiz_result.dart';
 
+/// Central state provider for the YCulture app.
+///
+/// Persists all data locally via [SharedPreferences].
+/// All mutating methods notify listeners and trigger a save.
 class QuizProvider with ChangeNotifier {
   static const int _xpSystemVersion = 2;
   static const int _baseXpPerLevel = 150;
@@ -28,8 +32,14 @@ class QuizProvider with ChangeNotifier {
   List<QuizResult> get results => List.unmodifiable(_results);
   String? get profileAvatarId => _profileAvatarId;
   int get experiencePoints => _experiencePoints;
+
+  /// XP required to complete the current level.
   int get xpPerLevel => _xpRequiredForLevel(level);
+
+  /// Current player level, computed from total XP.
   int get level => _getLevelProgress(_experiencePoints).level;
+
+  /// XP accumulated within the current level.
   int get experiencePointsInCurrentLevel =>
       _getLevelProgress(_experiencePoints).experiencePointsInCurrentLevel;
 
@@ -83,16 +93,14 @@ class QuizProvider with ChangeNotifier {
   }
 
   void _initializeDefaultData() {
-    // Thèmes par défaut
     _themes.addAll([
       QuizTheme(
         id: _uuid.v4(),
         name: 'Culture Générale',
         description: 'Testez vos connaissances générales',
-      )
+      ),
     ]);
 
-    // Questions par défaut
     final cultureThemeId = _themes[0].id;
     _questions.addAll([
       Question(
@@ -125,7 +133,8 @@ class QuizProvider with ChangeNotifier {
     ]);
   }
 
-  // Gestion des thèmes
+  // ── Themes ────────────────────────────────────────────────────────────────
+
   void addTheme(QuizTheme theme) {
     _themes.add(theme);
     notifyListeners();
@@ -141,6 +150,7 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
+  /// Deletes a theme and all questions that belong to it.
   void deleteTheme(String themeId) {
     _themes.removeWhere((t) => t.id == themeId);
     _questions.removeWhere((q) => q.themeId == themeId);
@@ -148,6 +158,7 @@ class QuizProvider with ChangeNotifier {
     _saveData();
   }
 
+  /// Returns null if no theme with [id] exists.
   QuizTheme? getThemeById(String id) {
     try {
       return _themes.firstWhere((t) => t.id == id);
@@ -156,7 +167,8 @@ class QuizProvider with ChangeNotifier {
     }
   }
 
-  // Gestion des questions
+  // ── Questions ─────────────────────────────────────────────────────────────
+
   void addQuestion(Question question) {
     _questions.add(question);
     notifyListeners();
@@ -182,7 +194,9 @@ class QuizProvider with ChangeNotifier {
     return _questions.where((q) => q.themeId == themeId).toList();
   }
 
-  // Gestion des résultats
+  // ── Results & XP ──────────────────────────────────────────────────────────
+
+  /// Saves a completed quiz result, computes XP gain, and returns an [ExperienceGain] summary.
   ExperienceGain addResult(QuizResult result) {
     final previousExperiencePoints = _experiencePoints;
     final previousLevel = level;
@@ -219,15 +233,13 @@ class QuizProvider with ChangeNotifier {
     return gain;
   }
 
+  /// XP required to complete [currentLevel] (increases linearly with level).
   int _xpRequiredForLevel(int currentLevel) {
     return _baseXpPerLevel + ((currentLevel - 1) * _xpPerLevelIncrement);
   }
 
   int _totalExperienceRequiredToReachLevel(int targetLevel) {
-    if (targetLevel <= 1) {
-      return 0;
-    }
-
+    if (targetLevel <= 1) return 0;
     final completedLevels = targetLevel - 1;
     return (completedLevels *
             ((2 * _baseXpPerLevel) +
@@ -250,26 +262,22 @@ class QuizProvider with ChangeNotifier {
     );
   }
 
-  int _migrateExperiencePoints({
-    required int legacyExperiencePoints,
-  }) {
+  /// Converts legacy flat-XP values (version 1) to the progressive scale (version 2).
+  int _migrateExperiencePoints({required int legacyExperiencePoints}) {
     final legacyLevel = (legacyExperiencePoints ~/ _baseXpPerLevel) + 1;
-    final legacyExperiencePointsInCurrentLevel =
-        legacyExperiencePoints % _baseXpPerLevel;
-    final migratedLevelBaseExperience =
-        _totalExperienceRequiredToReachLevel(legacyLevel);
+    final legacyXpInLevel = legacyExperiencePoints % _baseXpPerLevel;
+    final migratedBase = _totalExperienceRequiredToReachLevel(legacyLevel);
     final migratedXpPerLevel = _xpRequiredForLevel(legacyLevel);
-    final migratedLevelProgress =
-        ((legacyExperiencePointsInCurrentLevel / _baseXpPerLevel) *
-                migratedXpPerLevel)
-            .round();
-
-    return migratedLevelBaseExperience + migratedLevelProgress;
+    final migratedProgress =
+        ((legacyXpInLevel / _baseXpPerLevel) * migratedXpPerLevel).round();
+    return migratedBase + migratedProgress;
   }
 
   List<QuizResult> getResultsByTheme(String themeId) {
     return _results.where((r) => r.themeId == themeId).toList();
   }
+
+  // ── Profile ───────────────────────────────────────────────────────────────
 
   Future<void> setProfileAvatar(String avatarId) async {
     _profileAvatarId = avatarId;
@@ -286,6 +294,7 @@ class QuizProvider with ChangeNotifier {
   String generateId() => _uuid.v4();
 }
 
+/// XP and level changes resulting from a completed quiz.
 class ExperienceGain {
   final int gainedExperiencePoints;
   final int previousLevel;
@@ -301,6 +310,7 @@ class ExperienceGain {
     required this.currentExperiencePoints,
   });
 
+  /// True when the player reached a new level after this quiz.
   bool get didLevelUp => currentLevel > previousLevel;
 }
 

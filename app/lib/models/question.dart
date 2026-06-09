@@ -1,15 +1,24 @@
+/// Media type attached to a question.
 enum QuestionType {
+  /// Plain text question — no media.
   text,
+  /// Question accompanied by an image.
   image,
+  /// Question accompanied by an audio clip.
   audio,
 }
 
+/// How the user must answer a question.
 enum AnswerType {
+  /// User types a free-form answer; compared case-insensitively against [Question.correctAnswers].
   open,
+  /// User picks exactly one choice from [Question.choices].
   singleChoice,
+  /// User picks one or more choices from [Question.choices].
   multipleChoice,
 }
 
+/// A single quiz question with its media, answer configuration and theme membership.
 class Question {
   final String id;
   final String text;
@@ -17,8 +26,14 @@ class Question {
   final String? audioUrl;
   final QuestionType questionType;
   final AnswerType answerType;
+
+  /// Available choices shown for [AnswerType.singleChoice] and [AnswerType.multipleChoice].
   final List<String> choices;
+
+  /// Accepted correct answers. For open questions, multiple accepted phrasings can be listed.
   final List<String> correctAnswers;
+
+  /// ID of the [QuizTheme] this question belongs to.
   final String themeId;
 
   Question({
