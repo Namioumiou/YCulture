@@ -6,11 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
-/// Audio field that supports importing a file or recording from the microphone.
-/// Reports audio path changes via [onChanged] and recording state via [onRecordingStateChanged].
+import '../l10n/app_localizations.dart';
+
+/// Champ audio permettant d'importer un fichier ou d'enregistrer depuis le microphone.
+///
+/// Les changements de chemin audio sont notifiés via [onChanged].
+/// L'état d'enregistrement en cours est communiqué via [onRecordingStateChanged].
 class AudioRecorderField extends StatefulWidget {
+  /// Chemin initial d'un audio déjà sélectionné (mode édition).
   final String? initialAudioPath;
+
+  /// Appelé chaque fois que le chemin audio change (sélection ou fin d'enregistrement).
   final ValueChanged<String?> onChanged;
+
+  /// Appelé avec `true` au début d'un enregistrement, `false` à la fin.
   final ValueChanged<bool>? onRecordingStateChanged;
 
   const AudioRecorderField({
@@ -43,8 +52,9 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
   }
 
   Future<void> _pickAudio() async {
+    final l = AppLocalizations.of(context);
     if (_isRecording) {
-      _showSnack('Arrêtez l\'enregistrement avant d\'importer un audio.', Colors.orange);
+      _showSnack(l.audioStopFirst, Colors.orange);
       return;
     }
     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
@@ -53,7 +63,7 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
       setState(() => _audioPath = path);
       widget.onChanged(path);
     } else if (result != null && mounted) {
-      _showSnack('Impossible de récupérer ce fichier audio.', Colors.red);
+      _showSnack(l.audioRetrieveError, Colors.red);
     }
   }
 
@@ -65,9 +75,12 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
     }
   }
 
+  /// Démarre l'enregistrement après vérification des permissions.
+  /// Utilise le codec WAV si disponible, sinon AAC.
   Future<void> _startRecording() async {
+    final l = AppLocalizations.of(context);
     if (!await _recorder.hasPermission()) {
-      if (mounted) _showSnack('L\'accès au microphone est nécessaire pour enregistrer.', Colors.orange);
+      if (mounted) _showSnack(l.audioPermission, Colors.orange);
       return;
     }
     var encoder = AudioEncoder.wav;
@@ -80,6 +93,7 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
   }
 
   Future<void> _stopRecording() async {
+    final l = AppLocalizations.of(context);
     final path = await _recorder.stop();
     if (!mounted) return;
     setState(() {
@@ -90,10 +104,11 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
     if (path != null && path.isNotEmpty) {
       widget.onChanged(path);
     } else {
-      _showSnack('Aucun fichier audio n\'a été généré.', Colors.red);
+      _showSnack(l.audioNoFile, Colors.red);
     }
   }
 
+  /// Construit le chemin de destination du fichier enregistré dans le dossier `recordings/`.
   Future<String> _buildRecordingPath(AudioEncoder encoder) async {
     final dir = await getApplicationDocumentsDirectory();
     final recordings = Directory('${dir.path}${Platform.pathSeparator}recordings');
@@ -110,32 +125,34 @@ class _AudioRecorderFieldState extends State<AudioRecorderField> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         OutlinedButton.icon(
           onPressed: _isRecording ? null : _pickAudio,
           icon: const Icon(Icons.audiotrack),
-          label: Text(_audioPath == null ? 'Importer un fichier audio' : 'Audio sélectionné'),
+          label: Text(_audioPath == null ? l.audioImport : l.audioSelected),
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _toggleRecording,
           icon: Icon(_isRecording ? Icons.stop_circle : Icons.mic),
-          label: Text(_isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrer un audio'),
+          label: Text(_isRecording ? l.audioStop : l.audioRecord),
         ),
         if (_isRecording) ...[
           const SizedBox(height: 10),
-          const Text(
-            'Enregistrement en cours...',
+          Text(
+            l.audioRecordingLabel,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
           ),
         ],
         if (_audioPath != null && _audioPath!.isNotEmpty) ...[
           const SizedBox(height: 10),
           Text(
-            'Fichier : ${_audioPath!.split(RegExp(r'[\\/]')).last}',
+            l.audioFileLabel(_audioPath!.split(RegExp(r'[\\/]')).last),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.black54),
           ),

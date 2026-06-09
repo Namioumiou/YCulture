@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
@@ -8,13 +9,20 @@ import '../ui/app_theme.dart';
 import 'question_form_screen.dart';
 import 'quiz_screen.dart';
 
+/// Écran de sélection du thème avant de lancer un quiz.
+///
+/// Affiche la liste des [QuizTheme] disponibles.
+/// Un appui sur la carte lance le [QuizScreen] correspondant.
+/// Le bouton d'options ouvre la feuille de gestion des questions du thème.
 class ThemeSelectionScreen extends StatelessWidget {
   const ThemeSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return AppScaffold(
-      title: 'Choisissez un thème',
+      title: l.themeSelectionTitle,
       child: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
           final themes = quizProvider.themes;
@@ -32,9 +40,7 @@ class ThemeSelectionScreen extends StatelessWidget {
                               width: 72,
                               height: 72,
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.12,
-                                ),
+                                color: AppColors.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               child: const Icon(
@@ -44,10 +50,9 @@ class ThemeSelectionScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const AppSectionTitle(
-                              title: 'Aucun thème disponible',
-                              subtitle:
-                                  'Créez votre premier thème pour commencer à jouer.',
+                            AppSectionTitle(
+                              title: l.themeNoThemesTitle,
+                              subtitle: l.themeNoThemesSubtitle,
                             ),
                           ],
                         ),
@@ -59,24 +64,19 @@ class ThemeSelectionScreen extends StatelessWidget {
                     itemCount: themes.length,
                     itemBuilder: (context, index) {
                       final theme = themes[index];
-                      final questions = quizProvider.getQuestionsByTheme(
-                        theme.id,
-                      );
+                      final questions = quizProvider.getQuestionsByTheme(theme.id);
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _ThemeCard(
                           theme: theme,
                           questionCount: questions.length,
-                          onSettingsTap: () =>
-                              _showThemeQuestions(context, theme),
+                          onSettingsTap: () => _showThemeQuestions(context, theme),
                           onTap: () {
                             if (questions.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Ce thème ne contient pas encore de questions.',
-                                  ),
+                                SnackBar(
+                                  content: Text(l.themeNoQuestionsSnack),
                                   backgroundColor: AppColors.accent,
                                 ),
                               );
@@ -84,8 +84,7 @@ class ThemeSelectionScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      QuizScreen(theme: theme),
+                                  builder: (context) => QuizScreen(theme: theme),
                                 ),
                               );
                             }
@@ -101,6 +100,7 @@ class ThemeSelectionScreen extends StatelessWidget {
   }
 }
 
+/// Carte représentant un [QuizTheme] dans la liste de sélection.
 class _ThemeCard extends StatelessWidget {
   final QuizTheme theme;
   final int questionCount;
@@ -116,6 +116,8 @@ class _ThemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return AppSurfaceCard(
       onTap: onTap,
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
@@ -133,11 +135,7 @@ class _ThemeCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(
-              Icons.explore_rounded,
-              size: 24,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.explore_rounded, size: 24, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -151,18 +149,15 @@ class _ThemeCard extends StatelessWidget {
                   theme.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.muted,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 AppInfoChip(
                   icon: Icons.quiz_rounded,
-                  label:
-                      '$questionCount question${questionCount > 1 ? 's' : ''}',
-                  color: questionCount == 0
-                      ? AppColors.accent
-                      : AppColors.primary,
+                  label: l.themeQuestionCount(questionCount),
+                  color: questionCount == 0 ? AppColors.accent : AppColors.primary,
                 ),
               ],
             ),
@@ -173,11 +168,8 @@ class _ThemeCard extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: onSettingsTap,
-                tooltip: 'Gérer le thème',
-                constraints: const BoxConstraints.tightFor(
-                  width: 34,
-                  height: 34,
-                ),
+                tooltip: l.themeManageTooltip,
+                constraints: const BoxConstraints.tightFor(width: 34, height: 34),
                 padding: EdgeInsets.zero,
                 icon: const Icon(Icons.tune_rounded, color: AppColors.muted),
               ),
@@ -189,11 +181,7 @@ class _ThemeCard extends StatelessWidget {
                   color: AppColors.ink,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.arrow_forward_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
               ),
             ],
           ),
@@ -203,6 +191,7 @@ class _ThemeCard extends StatelessWidget {
   }
 }
 
+/// Affiche une feuille modale listant les questions du [theme] avec options modifier/supprimer.
 void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
   showModalBottomSheet<void>(
     context: parentContext,
@@ -211,6 +200,7 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
     builder: (context) {
       return Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
+          final l = AppLocalizations.of(context);
           final questions = quizProvider.getQuestionsByTheme(theme.id);
 
           return SafeArea(
@@ -224,18 +214,18 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                     children: [
                       AppSectionTitle(
                         title: theme.name,
-                        subtitle:
-                            '${questions.length} question${questions.length > 1 ? 's' : ''} dans ce thème',
+                        subtitle: l.themeQuestionsInTheme(questions.length),
                       ),
                       const SizedBox(height: 18),
                       Expanded(
                         child: questions.isEmpty
                             ? Center(
                                 child: Text(
-                                  'Aucune question dans ce thème pour le moment.',
+                                  l.themeQuestionsNone,
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.bodyLarge
-                                      ?.copyWith(color: AppColors.muted),
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: AppColors.muted,
+                                  ),
                                 ),
                               )
                             : ListView.separated(
@@ -248,13 +238,9 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                                   return Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.72,
-                                      ),
+                                      color: Colors.white.withValues(alpha: 0.72),
                                       borderRadius: BorderRadius.circular(22),
-                                      border: Border.all(
-                                        color: AppColors.border,
-                                      ),
+                                      border: Border.all(color: AppColors.border),
                                     ),
                                     child: Row(
                                       children: [
@@ -262,42 +248,29 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                                           width: 34,
                                           height: 34,
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withValues(
-                                              alpha: 0.12,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
+                                            color: AppColors.primary.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(12),
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(
                                             '${index + 1}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelLarge
-                                                ?.copyWith(
-                                                  color: AppColors.primary,
-                                                ),
+                                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                              color: AppColors.primary,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(question.text),
                                               const SizedBox(height: 6),
                                               Text(
-                                                _answerTypeLabel(
-                                                  question.answerType,
+                                                _answerTypeLabel(l, question.answerType),
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: AppColors.muted,
                                                 ),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: AppColors.muted,
-                                                    ),
                                               ),
                                             ],
                                           ),
@@ -310,26 +283,21 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                                                 parentContext,
                                                 MaterialPageRoute(
                                                   builder: (context) =>
-                                                      QuestionFormScreen(
-                                                        question: question,
-                                                      ),
+                                                      QuestionFormScreen(question: question),
                                                 ),
                                               );
                                             } else if (value == 'delete') {
-                                              _showDeleteQuestionDialog(
-                                                context,
-                                                question,
-                                              );
+                                              _showDeleteQuestionDialog(context, question);
                                             }
                                           },
-                                          itemBuilder: (context) => const [
+                                          itemBuilder: (context) => [
                                             PopupMenuItem<String>(
                                               value: 'edit',
-                                              child: Text('Modifier'),
+                                              child: Text(l.themeEditAction),
                                             ),
                                             PopupMenuItem<String>(
                                               value: 'delete',
-                                              child: Text('Supprimer'),
+                                              child: Text(l.themeDeleteButton),
                                             ),
                                           ],
                                         ),
@@ -351,17 +319,20 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
   );
 }
 
+/// Affiche une boîte de dialogue de confirmation avant de supprimer [question].
 void _showDeleteQuestionDialog(BuildContext context, Question question) {
   showDialog<void>(
     context: context,
     builder: (dialogContext) {
+      final l = AppLocalizations.of(context);
+
       return AlertDialog(
-        title: const Text('Supprimer la question ?'),
-        content: Text('Cette action est irréversible.\n\n"${question.text}"'),
+        title: Text(l.themeDeleteTitle),
+        content: Text(l.themeDeleteConfirm(question.text)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text(l.themeDeleteCancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -370,19 +341,16 @@ void _showDeleteQuestionDialog(BuildContext context, Question question) {
                 context,
                 listen: false,
               ).deleteQuestion(question.id);
-              if (!context.mounted) {
-                return;
-              }
+              if (!context.mounted) return;
               Navigator.pop(dialogContext);
-
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Question supprimée'),
+                SnackBar(
+                  content: Text(l.themeDeleteSuccess),
                   backgroundColor: Colors.redAccent,
                 ),
               );
             },
-            child: const Text('Supprimer'),
+            child: Text(l.themeDeleteButton),
           ),
         ],
       );
@@ -390,13 +358,14 @@ void _showDeleteQuestionDialog(BuildContext context, Question question) {
   );
 }
 
-String _answerTypeLabel(AnswerType type) {
+/// Retourne le libellé localisé du [type] de réponse.
+String _answerTypeLabel(AppLocalizations l, AnswerType type) {
   switch (type) {
     case AnswerType.open:
-      return 'Réponse ouverte';
+      return l.answerTypeOpen;
     case AnswerType.singleChoice:
-      return 'Choix unique';
+      return l.answerTypeSingle;
     case AnswerType.multipleChoice:
-      return 'Choix multiple';
+      return l.answerTypeMultiple;
   }
 }

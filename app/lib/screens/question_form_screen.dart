@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
@@ -11,9 +12,11 @@ import '../widgets/audio_recorder_field.dart';
 import '../widgets/choice_list_editor.dart';
 import '../widgets/question_type_selector.dart';
 
-/// Form screen for creating or editing a question.
-/// Pass [question] to pre-fill in edit mode; omit to create a new question.
+/// Écran de formulaire pour créer ou modifier une question.
+///
+/// Passer [question] pour pré-remplir en mode édition ; omettre pour créer.
 class QuestionFormScreen extends StatefulWidget {
+  /// Question à modifier. Si `null`, l'écran est en mode création.
   final Question? question;
 
   const QuestionFormScreen({super.key, this.question});
@@ -68,18 +71,20 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   }
 
   void _saveQuestion() {
+    final l = AppLocalizations.of(context);
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_isAudioRecording) {
-      _showSnack('Arrêtez l\'enregistrement avant d\'enregistrer la question.', Colors.orange);
+      _showSnack(l.questionFormStopRecording, Colors.orange);
       return;
     }
     if (_selectedThemeId == null) {
-      _showSnack('Veuillez sélectionner un thème', Colors.orange);
+      _showSnack(l.questionFormSelectTheme, Colors.orange);
       return;
     }
     if (_questionType == QuestionType.audio && (_audioPath == null || _audioPath!.isEmpty)) {
-      _showSnack('Veuillez sélectionner un fichier audio', Colors.orange);
+      _showSnack(l.questionFormSelectAudio, Colors.orange);
       return;
     }
 
@@ -94,12 +99,12 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           .toList();
       choices = [];
       if (correctAnswers.isEmpty) {
-        _showSnack('Veuillez entrer au moins une réponse attendue', Colors.orange);
+        _showSnack(l.questionFormMinAnswer, Colors.orange);
         return;
       }
     } else {
       if (_correctIndices.isEmpty) {
-        _showSnack('Veuillez sélectionner au moins une bonne réponse', Colors.orange);
+        _showSnack(l.questionFormSelectCorrect, Colors.orange);
         return;
       }
       choices = _choices.where((c) => c.isNotEmpty).toList();
@@ -123,7 +128,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
         correctAnswers: correctAnswers,
         themeId: _selectedThemeId,
       ));
-      _showSnack('Question modifiée avec succès', Colors.green);
+      _showSnack(l.questionFormEditSuccess, Colors.green);
     } else {
       provider.addQuestion(Question(
         id: provider.generateId(),
@@ -136,7 +141,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
         correctAnswers: correctAnswers,
         themeId: _selectedThemeId!,
       ));
-      _showSnack('Question créée avec succès !', Colors.green);
+      _showSnack(l.questionFormSuccess, Colors.green);
     }
     Navigator.pop(context);
   }
@@ -154,20 +159,18 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final themes = context.watch<QuizProvider>().themes;
-    final title = widget.isEditing ? 'Modifier la question' : 'Créer une question';
+    final title = widget.isEditing ? l.questionFormEditTitle : l.questionFormCreateTitle;
 
     if (themes.isEmpty) {
       return AppScaffold(
         title: title,
-        child: const Center(
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: AppSurfaceCard(
-              child: Text(
-                'Vous devez d\'abord créer un thème avant d\'ajouter des questions.',
-                textAlign: TextAlign.center,
-              ),
+              child: Text(l.questionFormNoTheme, textAlign: TextAlign.center),
             ),
           ),
         ),
@@ -192,9 +195,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                     onChanged: (id) => setState(() => _selectedThemeId = id),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Type de question',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    l.questionFormQuestionTypeLabel,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   QuestionTypeSelector(
@@ -207,20 +210,23 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                     keyboardType: TextInputType.multiline,
                     minLines: 1,
                     maxLines: null,
-                    decoration: const InputDecoration(
-                      labelText: 'Question',
-                      hintText: 'Entrez votre question',
-                      prefixIcon: Icon(Icons.help_outline),
+                    decoration: InputDecoration(
+                      labelText: l.questionFormQuestionLabel,
+                      hintText: l.questionFormQuestionHint,
+                      prefixIcon: const Icon(Icons.help_outline),
                     ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Veuillez entrer une question' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? l.questionFormQuestionError
+                        : null,
                   ),
                   const SizedBox(height: 20),
                   if (_questionType == QuestionType.image) ...[
                     OutlinedButton.icon(
                       onPressed: _pickImage,
                       icon: const Icon(Icons.add_photo_alternate),
-                      label: Text(_imagePath == null ? 'Ajouter une image' : 'Image sélectionnée'),
+                      label: Text(_imagePath == null
+                          ? l.questionFormAddImage
+                          : l.questionFormImageSelected),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -228,13 +234,14 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                     AudioRecorderField(
                       initialAudioPath: _audioPath,
                       onChanged: (path) => setState(() => _audioPath = path),
-                      onRecordingStateChanged: (r) => setState(() => _isAudioRecording = r),
+                      onRecordingStateChanged: (r) =>
+                          setState(() => _isAudioRecording = r),
                     ),
                     const SizedBox(height: 20),
                   ],
-                  const Text(
-                    'Type de réponse',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    l.questionFormAnswerTypeLabel,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   AnswerTypeSelector(
@@ -248,14 +255,15 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                   if (_answerType == AnswerType.open)
                     TextFormField(
                       controller: _openAnswersController,
-                      decoration: const InputDecoration(
-                        labelText: 'Réponses attendues (séparées par ;)',
-                        hintText: 'ex: Paris; paris',
-                        prefixIcon: Icon(Icons.check_circle_outline),
+                      decoration: InputDecoration(
+                        labelText: l.questionFormExpectedAnswersLabel,
+                        hintText: l.questionFormExpectedAnswersHint,
+                        prefixIcon: const Icon(Icons.check_circle_outline),
                       ),
                       validator: (v) =>
-                          (_answerType == AnswerType.open && (v == null || v.trim().isEmpty))
-                              ? 'Veuillez entrer au moins une réponse attendue'
+                          (_answerType == AnswerType.open &&
+                              (v == null || v.trim().isEmpty))
+                              ? l.questionFormMinAnswer
                               : null,
                     ),
                   if (_answerType != AnswerType.open)
@@ -272,7 +280,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                   ElevatedButton(
                     onPressed: _saveQuestion,
                     child: Text(
-                      widget.isEditing ? 'Enregistrer' : 'Créer la question',
+                      widget.isEditing ? l.questionFormSave : l.questionFormCreate,
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -287,7 +295,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   }
 }
 
-/// Theme dropdown selector used inside the question form.
+/// Sélecteur de thème sous forme de menu déroulant.
 class _ThemeDropdown extends StatelessWidget {
   final List<QuizTheme> themes;
   final String? selectedId;
@@ -301,10 +309,12 @@ class _ThemeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return DropdownButtonFormField<String>(
       initialValue: selectedId,
       decoration: InputDecoration(
-        labelText: 'Thème',
+        labelText: l.questionFormThemeLabel,
         prefixIcon: const Icon(Icons.category),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
@@ -314,7 +324,7 @@ class _ThemeDropdown extends StatelessWidget {
           .map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name)))
           .toList(),
       onChanged: onChanged,
-      validator: (v) => v == null ? 'Veuillez sélectionner un thème' : null,
+      validator: (v) => v == null ? l.questionFormThemeError : null,
     );
   }
 }

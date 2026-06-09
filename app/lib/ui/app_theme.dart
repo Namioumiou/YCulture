@@ -1,17 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Palette de couleurs de l'application YCulture.
+///
+/// Toutes les couleurs sont définies ici comme constantes statiques
+/// pour assurer une cohérence visuelle dans l'ensemble de l'UI.
 class AppColors {
+  /// Couleur de texte principale (bleu marine foncé).
   static const Color ink = Color(0xFF132238);
+
+  /// Couleur primaire (bleu).
   static const Color primary = Color(0xFF1C6DD0);
+
+  /// Couleur secondaire (turquoise).
   static const Color secondary = Color(0xFF14B8A6);
+
+  /// Couleur d'accentuation (orange coral).
   static const Color accent = Color(0xFFFF8A5B);
+
+  /// Couleur de fond principal (blanc cassé bleuté).
   static const Color canvas = Color(0xFFF6F8FC);
+
+  /// Couleur de surface des cartes (blanc pur).
   static const Color surface = Color(0xFFFFFFFF);
+
+  /// Couleur de texte secondaire / libellés discrets.
   static const Color muted = Color(0xFF66758C);
+
+  /// Couleur des bordures et séparateurs.
   static const Color border = Color(0xFFD7E1EF);
 }
 
+/// Construit et retourne le [ThemeData] utilisé par l'application.
+///
+/// Utilise Material 3 avec la typographie Manrope (Google Fonts).
 ThemeData buildAppTheme() {
   final colorScheme =
       ColorScheme.fromSeed(
@@ -178,6 +200,7 @@ ThemeData buildAppTheme() {
   );
 }
 
+/// Scaffold réutilisable avec AppBar et fond dégradé [AppBackground].
 class AppScaffold extends StatelessWidget {
   final String title;
   final Widget child;
@@ -217,6 +240,7 @@ class AppScaffold extends StatelessWidget {
   }
 }
 
+/// Fond dégradé tricolore avec trois orbes lumineux décoratifs.
 class AppBackground extends StatelessWidget {
   final Widget child;
 
@@ -266,6 +290,9 @@ class AppBackground extends StatelessWidget {
   }
 }
 
+/// Carte de surface translucide avec coins arrondis et ombre légère.
+///
+/// Supporte optionnellement un [onTap] qui active l'effet ripple Material.
 class AppSurfaceCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -282,53 +309,41 @@ class AppSurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x120F172A),
-            blurRadius: 30,
-            offset: Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Material(
+    final decoration = BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.82),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x120F172A),
+          blurRadius: 30,
+          offset: Offset(0, 18),
+        ),
+      ],
+    );
+
+    Widget content = Padding(padding: padding, child: child);
+
+    if (onTap != null) {
+      content = Material(
         type: MaterialType.transparency,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(28),
-          child: Padding(padding: padding, child: child),
+          child: content,
         ),
-      ),
-    );
-
-    if (onTap == null) {
-      return Container(
-        margin: margin,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x120F172A),
-              blurRadius: 30,
-              offset: Offset(0, 18),
-            ),
-          ],
-        ),
-        child: Padding(padding: padding, child: child),
       );
     }
 
-    return card;
+    return Container(
+      margin: margin,
+      decoration: decoration,
+      child: content,
+    );
   }
 }
 
+/// Puce d'information avec icône et libellé, utilisée dans les statistiques de l'accueil.
 class AppInfoChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -366,6 +381,7 @@ class AppInfoChip extends StatelessWidget {
   }
 }
 
+/// Titre de section avec un titre principal et un sous-titre optionnel.
 class AppSectionTitle extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -392,6 +408,7 @@ class AppSectionTitle extends StatelessWidget {
   }
 }
 
+/// Orbe lumineux décoratif utilisé en arrière-plan dans [AppBackground].
 class _GlowOrb extends StatelessWidget {
   final double size;
   final List<Color> colors;

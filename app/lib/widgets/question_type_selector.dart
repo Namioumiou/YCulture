@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 
-/// Segmented selector for the media type of a question (text, image, audio).
+/// Sélecteur segmenté pour le type de média associé à une question (texte, image, audio).
 class QuestionTypeSelector extends StatelessWidget {
   final QuestionType selected;
   final ValueChanged<QuestionType> onChanged;
@@ -14,22 +15,24 @@ class QuestionTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return SegmentedButton<QuestionType>(
-      segments: const [
+      segments: [
         ButtonSegment(
           value: QuestionType.text,
-          label: Text('Texte'),
-          icon: Icon(Icons.text_fields),
+          label: Text(l.questionTypeText),
+          icon: const Icon(Icons.text_fields),
         ),
         ButtonSegment(
           value: QuestionType.image,
-          label: Text('Image'),
-          icon: Icon(Icons.image),
+          label: Text(l.questionTypeImage),
+          icon: const Icon(Icons.image),
         ),
         ButtonSegment(
           value: QuestionType.audio,
-          label: Text('Audio'),
-          icon: Icon(Icons.audio_file),
+          label: Text(l.questionTypeAudio),
+          icon: const Icon(Icons.audio_file),
         ),
       ],
       selected: {selected},
