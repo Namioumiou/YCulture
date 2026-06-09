@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 import 'theme_selection_screen.dart';
@@ -8,6 +9,7 @@ import 'create_theme_screen.dart';
 import 'question_form_screen.dart';
 import 'profile_screen.dart';
 
+/// Écran d'accueil de l'application YCulture.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -33,13 +35,15 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// Header card displaying app stats and profile avatar.
-/// Uses [context.select] so only the changed field triggers a rebuild.
+/// Carte d'en-tête affichant les statistiques et l'avatar de profil.
+///
+/// Utilise [context.select] pour ne redessiner que le champ modifié.
 class _HomeHeaderCard extends StatelessWidget {
   const _HomeHeaderCard();
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final avatarId = context.select((QuizProvider p) => p.profileAvatarId);
     final themesCount = context.select((QuizProvider p) => p.themes.length);
     final questionsCount = context.select((QuizProvider p) => p.questions.length);
@@ -76,10 +80,10 @@ class _HomeHeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Text('YCulture', style: Theme.of(context).textTheme.headlineMedium),
+          Text(l.appTitle, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 12),
           Text(
-            'Bienvenue sur YCulture, votre application de quiz personnalisable !',
+            l.homeWelcome,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
           ),
           const SizedBox(height: 22),
@@ -87,20 +91,20 @@ class _HomeHeaderCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              AppInfoChip(icon: Icons.category_rounded, label: '$themesCount thèmes'),
+              AppInfoChip(icon: Icons.category_rounded, label: l.homeThemesCount(themesCount)),
               AppInfoChip(
                 icon: Icons.quiz_outlined,
-                label: '$questionsCount questions',
+                label: l.homeQuestionsCount(questionsCount),
                 color: AppColors.secondary,
               ),
               AppInfoChip(
                 icon: Icons.insights_outlined,
-                label: '$resultsCount résultats',
+                label: l.homeResultsCount(resultsCount),
                 color: AppColors.accent,
               ),
               AppInfoChip(
                 icon: Icons.stars_rounded,
-                label: 'Niv. $level',
+                label: l.homeLevelBadge(level),
                 color: AppColors.ink,
               ),
             ],
@@ -111,19 +115,21 @@ class _HomeHeaderCard extends StatelessWidget {
   }
 }
 
-/// Static menu section — no provider access, never rebuilds on state changes.
+/// Section de menu statique — aucun accès au provider, jamais reconstruite.
 class _HomeMenuSection extends StatelessWidget {
   const _HomeMenuSection();
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _MenuButton(
           icon: Icons.play_arrow_rounded,
-          label: 'Jouer maintenant',
-          subtitle: 'Parcourir les thèmes disponibles',
+          label: l.homePlayNow,
+          subtitle: l.homePlaySubtitle,
           color: AppColors.primary,
           onPressed: () => Navigator.push(
             context,
@@ -133,8 +139,8 @@ class _HomeMenuSection extends StatelessWidget {
         const SizedBox(height: 14),
         _MenuButton(
           icon: Icons.palette_outlined,
-          label: 'Créer un thème',
-          subtitle: 'Ajouter une nouvelle catégorie de quiz',
+          label: l.homeCreateTheme,
+          subtitle: l.homeCreateThemeSubtitle,
           color: AppColors.secondary,
           onPressed: () => Navigator.push(
             context,
@@ -144,8 +150,8 @@ class _HomeMenuSection extends StatelessWidget {
         const SizedBox(height: 14),
         _MenuButton(
           icon: Icons.edit_note_rounded,
-          label: 'Créer une question',
-          subtitle: 'Texte, image ou audio',
+          label: l.homeCreateQuestion,
+          subtitle: l.homeCreateQuestionSubtitle,
           color: AppColors.accent,
           onPressed: () => Navigator.push(
             context,
@@ -155,8 +161,8 @@ class _HomeMenuSection extends StatelessWidget {
         const SizedBox(height: 14),
         _MenuButton(
           icon: Icons.person_outline_rounded,
-          label: 'Mon profil',
-          subtitle: 'Modifier votre avatar utilisateur',
+          label: l.homeMyProfile,
+          subtitle: l.homeMyProfileSubtitle,
           color: const Color.fromARGB(255, 31, 139, 206),
           onPressed: () => Navigator.push(
             context,
@@ -168,6 +174,7 @@ class _HomeMenuSection extends StatelessWidget {
   }
 }
 
+/// Avatar de profil cliquable affiché dans l'en-tête de l'accueil.
 class _HomeProfileAvatar extends StatefulWidget {
   final String? avatarId;
   final VoidCallback onTap;
@@ -192,10 +199,8 @@ class _HomeProfileAvatarState extends State<_HomeProfileAvatar> {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
     final assets = manifest.listAssets().where((asset) {
       return asset.startsWith(_avatarDirectory) &&
-          (asset.endsWith('.png') ||
-              asset.endsWith('.jpg') ||
-              asset.endsWith('.jpeg') ||
-              asset.endsWith('.webp'));
+          (asset.endsWith('.png') || asset.endsWith('.jpg') ||
+              asset.endsWith('.jpeg') || asset.endsWith('.webp'));
     });
 
     final map = <String, String>{};
@@ -220,9 +225,7 @@ class _HomeProfileAvatarState extends State<_HomeProfileAvatar> {
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [AppColors.secondary, AppColors.accent],
-          ),
+          gradient: const LinearGradient(colors: [AppColors.secondary, AppColors.accent]),
           boxShadow: const [
             BoxShadow(color: Color(0x1A0F172A), blurRadius: 14, offset: Offset(0, 8)),
           ],
@@ -241,6 +244,7 @@ class _HomeProfileAvatarState extends State<_HomeProfileAvatar> {
   }
 }
 
+/// Bouton de menu principal avec icône, titre, sous-titre et couleur thématique.
 class _MenuButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -299,9 +303,7 @@ class _MenuButton extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(

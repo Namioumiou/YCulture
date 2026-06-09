@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 
+/// Écran de création d'un nouveau thème de quiz.
+///
+/// Affiche un formulaire avec un champ nom et un champ description.
+/// À la validation, un [QuizTheme] est créé et ajouté via [QuizProvider].
 class CreateThemeScreen extends StatefulWidget {
   const CreateThemeScreen({super.key});
 
@@ -25,8 +30,9 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
 
   void _saveTheme() {
     if (_formKey.currentState!.validate()) {
+      final l = AppLocalizations.of(context);
       final quizProvider = Provider.of<QuizProvider>(context, listen: false);
-      
+
       final newTheme = QuizTheme(
         id: quizProvider.generateId(),
         name: _nameController.text.trim(),
@@ -36,8 +42,8 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
       quizProvider.addTheme(newTheme);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thème créé avec succès !'),
+        SnackBar(
+          content: Text(l.createThemeSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -48,8 +54,10 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return AppScaffold(
-      title: 'Créer un thème',
+      title: l.createThemeTitle,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -65,14 +73,14 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
                     children: [
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom du thème',
-                          hintText: 'Ex: Géographie mondiale',
-                          prefixIcon: Icon(Icons.title_rounded),
+                        decoration: InputDecoration(
+                          labelText: l.createThemeNameLabel,
+                          hintText: l.createThemeNameHint,
+                          prefixIcon: const Icon(Icons.title_rounded),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Veuillez entrer un nom';
+                            return l.createThemeNameError;
                           }
                           return null;
                         },
@@ -81,16 +89,16 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
                       TextFormField(
                         controller: _descriptionController,
                         keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Décrivez le contenu du thème',
-                          prefixIcon: Icon(Icons.notes_rounded),
+                        decoration: InputDecoration(
+                          labelText: l.createThemeDescLabel,
+                          hintText: l.createThemeDescHint,
+                          prefixIcon: const Icon(Icons.notes_rounded),
                         ),
                         minLines: 1,
                         maxLines: null,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Veuillez entrer une description';
+                            return l.createThemeDescError;
                           }
                           return null;
                         },
@@ -102,7 +110,7 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
                 ElevatedButton.icon(
                   onPressed: _saveTheme,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Créer le thème'),
+                  label: Text(l.createThemeButton),
                 ),
               ],
             ),

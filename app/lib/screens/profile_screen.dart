@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/quiz_result.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
+import '../widgets/avatar_picker_sheet.dart';
 import 'result_screen.dart';
 
+/// Écran de profil de l'utilisateur.
+///
+/// Affiche l'avatar sélectionné, la progression XP/niveau
+/// et les 10 derniers résultats de quiz.
+/// Permet de choisir un avatar parmi la galerie d'assets `assets/avatars/`,
+/// certains avatars étant débloqués en fonction du niveau atteint.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -16,7 +24,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   static const String _avatarDirectory = 'assets/avatars/';
-  List<_AvatarPreset> _avatarBank = const [];
+  List<AvatarPreset> _avatarBank = const [];
 
   @override
   void initState() {
@@ -26,23 +34,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadAvatarBank() async {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    final avatarAssets = manifest.listAssets()
+    final avatarAssets = manifest
+        .listAssets()
         .where(
           (asset) =>
               asset.startsWith(_avatarDirectory) &&
-              (asset.endsWith('.png') || asset.endsWith('.jpg') || asset.endsWith('.jpeg') || asset.endsWith('.webp')),
+              (asset.endsWith('.png') ||
+                  asset.endsWith('.jpg') ||
+                  asset.endsWith('.jpeg') ||
+                  asset.endsWith('.webp')),
         )
         .toList()
       ..sort();
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     setState(() {
       _avatarBank = avatarAssets
           .map(
-            (assetPath) => _AvatarPreset(
+            (assetPath) => AvatarPreset(
               id: _buildAvatarId(assetPath),
               imagePath: assetPath,
             ),
@@ -57,14 +67,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return dotIndex == -1 ? fileName : fileName.substring(0, dotIndex);
   }
 
-  _AvatarPreset _resolveAvatar(String? avatarId) {
+  AvatarPreset _resolveAvatar(String? avatarId) {
     if (_avatarBank.isEmpty) {
-      return const _AvatarPreset(
-        id: 'placeholder',
-        imagePath: '',
-      );
+      return const AvatarPreset(id: 'placeholder', imagePath: '');
     }
-
     return _avatarBank.firstWhere(
       (preset) => preset.id == avatarId,
       orElse: () => _avatarBank.first,
@@ -73,17 +79,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _selectAvatar(String avatarId) async {
     await context.read<QuizProvider>().setProfileAvatar(avatarId);
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avatar mis a jour')),
+      SnackBar(content: Text(AppLocalizations.of(context).profileAvatarUpdated)),
     );
   }
 
-  int _requiredLevelForAvatarIndex(int index) {
-    return 1 + (index ~/ 2);
-  }
+  int _requiredLevelForAvatarIndex(int index) => 1 + (index ~/ 2);
 
   Future<void> _openAvatarPicker(String? selectedAvatarId, int userLevel) async {
     await showModalBottomSheet<void>(
@@ -91,132 +93,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: Colors.transparent,
-      builder: (modalContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: AppSurfaceCard(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Choisir un avatar',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Certains avatars se debloquent avec votre niveau.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.muted,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _avatarBank.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemBuilder: (context, index) {
-                      final avatar = _avatarBank[index];
-                      final isSelected = avatar.id == selectedAvatarId;
-                      final requiredLevel = _requiredLevelForAvatarIndex(index);
-                      final isUnlocked = userLevel >= requiredLevel;
-
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () async {
-                          if (!isUnlocked) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Cet avatar se debloque au niveau $requiredLevel.',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          Navigator.of(modalContext).pop();
-                          await _selectAvatar(avatar.id);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.border,
-                              width: isSelected ? 2.2 : 1,
-                            ),
-                          ),
-                          child: Container(
-                            margin: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Opacity(
-                                  opacity: isUnlocked ? 1 : 0.32,
-                                  child: Image.asset(
-                                    avatar.imagePath,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                if (!isUnlocked)
-                                  Container(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    alignment: Alignment.center,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.lock_rounded,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Niv. $requiredLevel',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      builder: (_) => AvatarPickerSheet(
+        avatarBank: _avatarBank,
+        selectedAvatarId: selectedAvatarId,
+        userLevel: userLevel,
+        onSelected: _selectAvatar,
+        requiredLevelForIndex: _requiredLevelForAvatarIndex,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return AppScaffold(
-      title: 'Profil',
+      title: l.profileTitle,
       child: SafeArea(
         child: Builder(
           builder: (context) {
@@ -229,14 +121,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Icon(Icons.hide_image_outlined, size: 42, color: AppColors.muted),
                       const SizedBox(height: 16),
                       Text(
-                        'Aucun avatar disponible',
+                        l.profileNoAvatar,
                         style: Theme.of(context).textTheme.titleLarge,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Ajoutez des images dans assets/avatars pour les afficher ici.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                        l.profileNoAvatarHint,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.muted,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -245,7 +139,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
             }
 
-            // Granular selectors: each rebuilds only its own piece of UI.
             final selectedAvatarId = context.select((QuizProvider p) => p.profileAvatarId);
             final selectedPreset = _resolveAvatar(selectedAvatarId);
             final level = context.select((QuizProvider p) => p.level);
@@ -292,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Mon profil',
+                          l.profileMyProfile,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 12),
@@ -309,25 +202,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(
-                                    Icons.stars_rounded,
-                                    color: AppColors.secondary,
-                                  ),
+                                  const Icon(Icons.stars_rounded, color: AppColors.secondary),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Niveau $level',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                    l.profileLevel(level),
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   const Spacer(),
                                   Text(
-                                    '$levelXp/$xpPerLevel XP',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: AppColors.muted),
+                                    l.profileXp(levelXp, xpPerLevel),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppColors.muted,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -352,10 +240,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Historique des quizz',
+                    l.profileHistory,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   if (recentResults.isEmpty)
@@ -367,11 +255,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const Icon(Icons.history_rounded, color: AppColors.muted, size: 28),
                             const SizedBox(width: 12),
                             Text(
-                              'Aucun quizz effectué pour l\'instant.',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppColors.muted),
+                              l.profileNoHistory,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.muted,
+                              ),
                             ),
                           ],
                         ),
@@ -382,17 +269,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           for (int i = 0; i < recentResults.length; i++) ...[
-                            if (i > 0)
-                              const Divider(height: 1, color: AppColors.border),
+                            if (i > 0) const Divider(height: 1, color: AppColors.border),
                             _QuizHistoryRow(
                               result: recentResults[i],
                               themeName: context
                                       .read<QuizProvider>()
                                       .getThemeById(recentResults[i].themeId)
                                       ?.name ??
-                                  'Thème supprimé',
+                                  l.profileThemeDeleted,
                               onTap: () {
-                                final theme = context.read<QuizProvider>().getThemeById(recentResults[i].themeId);
+                                final theme = context
+                                    .read<QuizProvider>()
+                                    .getThemeById(recentResults[i].themeId);
                                 if (theme == null) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -422,6 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+/// Ligne d'historique affichant le score, le thème et la date d'un [QuizResult].
 class _QuizHistoryRow extends StatelessWidget {
   final QuizResult result;
   final String themeName;
@@ -448,74 +337,63 @@ class _QuizHistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = result.percentage;
     final color = _scoreColor(pct);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '${pct.round()}%',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  themeName,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatDate(result.completedAt),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: AppColors.muted),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${result.correctAnswers}/${result.totalQuestions}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${pct.round()}%',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,
                 ),
-          ),
-        ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    themeName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(result.completedAt),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${result.correctAnswers}/${result.totalQuestions}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
-}
-
-class _AvatarPreset {
-  final String id;
-  final String imagePath;
-
-  const _AvatarPreset({
-    required this.id,
-    required this.imagePath,
-  });
 }

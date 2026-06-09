@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 
-/// Editable list of answer choices with correct-answer checkboxes.
-/// Resets correct selections when [answerType] changes.
-/// Reports every change via [onChanged].
+/// Liste éditable de propositions de réponse avec cases à cocher pour les bonnes réponses.
+///
+/// Réinitialise automatiquement les sélections correctes lorsque [answerType] change.
+/// Notifie chaque modification via [onChanged].
 class ChoiceListEditor extends StatefulWidget {
+  /// Propositions initiales (préremplies en mode édition).
   final List<String> initialChoices;
+
+  /// Indices des propositions correctes au chargement initial.
   final Set<int> initialCorrectIndices;
+
+  /// Mode de réponse courant ; détermine si une seule case peut être cochée.
   final AnswerType answerType;
+
+  /// Appelé à chaque modification de la liste ou des cases cochées.
   final void Function(List<String> choices, Set<int> correctIndices) onChanged;
 
   const ChoiceListEditor({
@@ -38,7 +47,7 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
   @override
   void didUpdateWidget(covariant ChoiceListEditor old) {
     super.didUpdateWidget(old);
-    // Reset correct selections when switching between single / multiple choice.
+    // Réinitialise les bonnes réponses lors du passage entre choix unique et multiple.
     if (old.answerType != widget.answerType) {
       setState(() => _correctIndices.clear());
       _notify();
@@ -58,6 +67,8 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
     _notify();
   }
 
+  /// Supprime la proposition à [index] (minimum deux propositions conservées).
+  /// Décale les indices corrects supérieurs à [index] pour rester cohérents.
   void _remove(int index) {
     if (_controllers.length <= 2) return;
     setState(() {
@@ -75,6 +86,8 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
     _notify();
   }
 
+  /// Coche ou décoche la proposition à [index] comme bonne réponse.
+  /// En mode [AnswerType.singleChoice], décoche toute autre sélection avant de cocher.
   void _toggle(int index) {
     final isSingle = widget.answerType == AnswerType.singleChoice;
     setState(() {
@@ -97,21 +110,23 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSingle = widget.answerType == AnswerType.singleChoice;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Réponses possibles',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              l.choiceAnswersLabel,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
               onPressed: _add,
               icon: const Icon(Icons.add),
-              label: const Text('Ajouter'),
+              label: Text(l.choiceAddButton),
             ),
           ],
         ),
@@ -133,13 +148,13 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
                     controller: controller,
                     onChanged: (_) => _notify(),
                     decoration: InputDecoration(
-                      hintText: 'Réponse ${index + 1}',
+                      hintText: l.choiceHint(index + 1),
                       fillColor: isCorrect
                           ? Colors.green.withValues(alpha: 0.1)
                           : Colors.grey[50],
                     ),
                     validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Réponse requise' : null,
+                        (v == null || v.trim().isEmpty) ? l.choiceRequired : null,
                   ),
                 ),
                 IconButton(
@@ -152,7 +167,7 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
         }),
         const SizedBox(height: 4),
         Text(
-          isSingle ? 'Cochez la bonne réponse' : 'Cochez toutes les bonnes réponses',
+          isSingle ? l.choiceSelectOne : l.choiceSelectMultiple,
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey[600],

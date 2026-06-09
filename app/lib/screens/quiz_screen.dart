@@ -5,13 +5,19 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
 import 'result_screen.dart';
 
+/// Écran principal du quiz pour un [QuizTheme] donné.
+///
+/// Parcourt les questions une à une, collecte les réponses de l'utilisateur
+/// et navigue vers [ResultScreen] à la fin. Gère la lecture audio via [AudioPlayer].
 class QuizScreen extends StatefulWidget {
+  /// Thème dont les questions seront jouées.
   final QuizTheme theme;
 
   const QuizScreen({super.key, required this.theme});
@@ -33,10 +39,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void initState() {
     super.initState();
     _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
         _isPlayingAudio = false;
         _playingQuestionId = null;
@@ -88,19 +91,14 @@ class _QuizScreenState extends State<QuizScreen> {
         if (question.answerType == AnswerType.multipleChoice) {
           final userSet = Set<String>.from(userAnswer as List);
           final correctSet = Set<String>.from(question.correctAnswers);
-          if (userSet.containsAll(correctSet) &&
-              correctSet.containsAll(userSet)) {
+          if (userSet.containsAll(correctSet) && correctSet.containsAll(userSet)) {
             correctAnswers++;
           }
         } else if (question.answerType == AnswerType.singleChoice) {
-          if (question.correctAnswers.contains(userAnswer)) {
-            correctAnswers++;
-          }
+          if (question.correctAnswers.contains(userAnswer)) correctAnswers++;
         } else if (question.answerType == AnswerType.open) {
           final answer = (userAnswer as String).toLowerCase().trim();
-          if (question.correctAnswers.any(
-            (correct) => correct.toLowerCase().trim() == answer,
-          )) {
+          if (question.correctAnswers.any((c) => c.toLowerCase().trim() == answer)) {
             correctAnswers++;
           }
         }
@@ -123,32 +121,21 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _stopAudio({required bool resetPlayingQuestion}) async {
     await _audioPlayer.stop();
-
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     setState(() {
       _isPlayingAudio = false;
-      if (resetPlayingQuestion) {
-        _playingQuestionId = null;
-      }
+      if (resetPlayingQuestion) _playingQuestionId = null;
     });
   }
 
   Future<void> _toggleAudio(Question question) async {
+    final l = AppLocalizations.of(context);
     final audioPath = question.audioUrl;
-
-    if (audioPath == null || audioPath.isEmpty) {
-      return;
-    }
+    if (audioPath == null || audioPath.isEmpty) return;
 
     if (!File(audioPath).existsSync()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le fichier audio est introuvable sur cet appareil.'),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text(l.quizAudioNotFound), backgroundColor: Colors.redAccent),
       );
       return;
     }
@@ -160,51 +147,37 @@ class _QuizScreenState extends State<QuizScreen> {
         } else {
           await _audioPlayer.resume();
         }
-
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _isPlayingAudio = !_isPlayingAudio;
-        });
+        if (!mounted) return;
+        setState(() => _isPlayingAudio = !_isPlayingAudio);
         return;
       }
 
       await _audioPlayer.stop();
       await _audioPlayer.play(DeviceFileSource(audioPath));
-
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
         _playingQuestionId = question.id;
         _isPlayingAudio = true;
       });
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible de lire ce fichier audio.'),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text(l.quizAudioError), backgroundColor: Colors.redAccent),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     if (_questions.isEmpty) {
       return AppScaffold(
         title: widget.theme.name,
-        child: const Center(
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.all(20),
-            child: AppSurfaceCard(child: Text('Aucune question disponible')),
+            padding: const EdgeInsets.all(20),
+            child: AppSurfaceCard(child: Text(l.quizNoQuestions)),
           ),
         ),
       );
@@ -212,6 +185,8 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final question = _questions[_currentQuestionIndex];
     final progress = (_currentQuestionIndex + 1) / _questions.length;
+    final hasAnswer = _userAnswers.containsKey(_currentQuestionIndex);
+    final isLastQuestion = _currentQuestionIndex == _questions.length - 1;
 
     return AppScaffold(
       title: widget.theme.name,
@@ -225,14 +200,16 @@ class _QuizScreenState extends State<QuizScreen> {
               minHeight: 10,
               value: progress,
               backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
         ),
       ),
-      bottomNavigationBar: _buildNavigationButtons(),
+      bottomNavigationBar: _QuizNavigationBar(
+        hasAnswer: hasAnswer,
+        isLastQuestion: isLastQuestion,
+        onPressed: hasAnswer ? (isLastQuestion ? _finishQuiz : _nextQuestion) : null,
+      ),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
@@ -244,11 +221,18 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildQuestionContent(question),
+                    _QuestionCard(
+                      question: question,
+                      currentIndex: _currentQuestionIndex,
+                      totalCount: _questions.length,
+                      isAudioPlaying:
+                          _playingQuestionId == question.id && _isPlayingAudio,
+                      onToggleAudio: () => _toggleAudio(question),
+                    ),
                     const SizedBox(height: 24),
                     AppSectionTitle(
-                      title: 'Votre réponse',
-                      subtitle: _getAnswerSectionSubtitle(question),
+                      title: l.quizYourAnswer,
+                      subtitle: _getAnswerSubtitle(l, question),
                     ),
                     const SizedBox(height: 16),
                     _buildAnswerInput(question),
@@ -262,95 +246,15 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildQuestionContent(Question question) {
-    final isCurrentAudioPlaying =
-        _playingQuestionId == question.id && _isPlayingAudio;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Question ${_currentQuestionIndex + 1}/${_questions.length}',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(question.text, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 18),
-        if (question.questionType == QuestionType.image &&
-            question.imageUrl != null)
-          _buildQuestionImage(question.imageUrl!),
-        if (question.questionType == QuestionType.audio &&
-            question.audioUrl != null)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF0F7FF), Color(0xFFEAFBF8)],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      isCurrentAudioPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                    onPressed: () => _toggleAudio(question),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    isCurrentAudioPlaying
-                        ? 'Lecture audio en cours'
-                        : 'Appuyez pour écouter l\'indice audio',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildQuestionImage(String imagePath) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: Image.file(
-        File(imagePath),
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        // Uses Flutter's image cache — no disk re-read on each setState.
-        errorBuilder: (_, _, _) => Container(
-          height: 220,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Center(
-            child: Text(
-              'Impossible de charger l\'image',
-              style: TextStyle(color: Colors.black54),
-            ),
-          ),
-        ),
-      ),
-    );
+  String _getAnswerSubtitle(AppLocalizations l, Question question) {
+    switch (question.answerType) {
+      case AnswerType.singleChoice:
+        return l.quizAnswerSubtitleSingle;
+      case AnswerType.multipleChoice:
+        return l.quizAnswerSubtitleMultiple;
+      case AnswerType.open:
+        return l.quizAnswerSubtitleOpen;
+    }
   }
 
   Widget _buildAnswerInput(Question question) {
@@ -361,17 +265,6 @@ class _QuizScreenState extends State<QuizScreen> {
         return _buildMultipleChoice(question);
       case AnswerType.open:
         return _buildOpenAnswer();
-    }
-  }
-
-  String _getAnswerSectionSubtitle(Question question) {
-    switch (question.answerType) {
-      case AnswerType.singleChoice:
-        return 'Sélectionnez une seule réponse.';
-      case AnswerType.multipleChoice:
-        return 'Sélectionnez une ou plusieurs réponses.';
-      case AnswerType.open:
-        return 'Saisissez votre réponse.';
     }
   }
 
@@ -396,7 +289,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildMultipleChoice(Question question) {
     final selectedAnswers = _userAnswers[_currentQuestionIndex] as List? ?? [];
-
     return Column(
       children: question.choices.map((choice) {
         final isSelected = selectedAnswers.contains(choice);
@@ -424,22 +316,161 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Widget _buildOpenAnswer() {
+    final l = AppLocalizations.of(context);
     return TextFormField(
       initialValue: _userAnswers[_currentQuestionIndex]?.toString() ?? '',
       onChanged: (value) => _submitAnswer(value),
-      decoration: const InputDecoration(
-        hintText: 'Votre réponse...',
-        prefixIcon: Icon(Icons.edit_note_rounded),
+      decoration: InputDecoration(
+        hintText: l.quizAnswerHint,
+        prefixIcon: const Icon(Icons.edit_note_rounded),
       ),
       keyboardType: TextInputType.multiline,
       minLines: 1,
       maxLines: null,
     );
   }
+}
 
-  Widget _buildNavigationButtons() {
-    final hasAnswer = _userAnswers.containsKey(_currentQuestionIndex);
-    final isLastQuestion = _currentQuestionIndex == _questions.length - 1;
+// ---------------------------------------------------------------------------
+// Extracted widgets
+// ---------------------------------------------------------------------------
+
+/// En-tête de la question : compteur, texte, image ou lecteur audio.
+class _QuestionCard extends StatelessWidget {
+  final Question question;
+  final int currentIndex;
+  final int totalCount;
+  final bool isAudioPlaying;
+  final VoidCallback onToggleAudio;
+
+  const _QuestionCard({
+    required this.question,
+    required this.currentIndex,
+    required this.totalCount,
+    required this.isAudioPlaying,
+    required this.onToggleAudio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l.quizQuestionCounter(currentIndex + 1, totalCount),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(question.text, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 18),
+        if (question.questionType == QuestionType.image && question.imageUrl != null)
+          _QuestionImage(imagePath: question.imageUrl!, l: l),
+        if (question.questionType == QuestionType.audio && question.audioUrl != null)
+          _AudioPlayer(isPlaying: isAudioPlaying, onToggle: onToggleAudio, l: l),
+      ],
+    );
+  }
+}
+
+/// Image associée à la question avec fallback en cas d'erreur de chargement.
+class _QuestionImage extends StatelessWidget {
+  final String imagePath;
+  final AppLocalizations l;
+
+  const _QuestionImage({required this.imagePath, required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.file(
+        File(imagePath),
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Center(
+            child: Text(l.quizImageError, style: const TextStyle(color: Colors.black54)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lecteur audio intégré à la question avec bouton play/pause.
+class _AudioPlayer extends StatelessWidget {
+  final bool isPlaying;
+  final VoidCallback onToggle;
+  final AppLocalizations l;
+
+  const _AudioPlayer({required this.isPlaying, required this.onToggle, required this.l});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF0F7FF), Color(0xFFEAFBF8)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: IconButton(
+              icon: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                size: 30,
+                color: Colors.white,
+              ),
+              onPressed: onToggle,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              isPlaying ? l.quizAudioPlaying : l.quizAudioPrompt,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barre de navigation du quiz avec le bouton Valider/Terminer.
+class _QuizNavigationBar extends StatelessWidget {
+  final bool hasAnswer;
+  final bool isLastQuestion;
+  final VoidCallback? onPressed;
+
+  const _QuizNavigationBar({
+    required this.hasAnswer,
+    required this.isLastQuestion,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
 
     return Container(
       color: Colors.transparent,
@@ -452,10 +483,8 @@ class _QuizScreenState extends State<QuizScreen> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: hasAnswer
-                      ? (isLastQuestion ? _finishQuiz : _nextQuestion)
-                      : null,
-                  child: Text(isLastQuestion ? 'Terminer' : 'Valider'),
+                  onPressed: onPressed,
+                  child: Text(isLastQuestion ? l.quizFinish : l.quizValidate),
                 ),
               ),
             ],
@@ -466,6 +495,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 }
 
+/// Tuile de proposition de réponse avec animation de sélection.
 class _AnswerChoiceTile extends StatelessWidget {
   final String label;
   final bool selected;

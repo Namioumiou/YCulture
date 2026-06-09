@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 
-/// Segmented selector for how the user answers a question (open text, single choice, multiple choice).
+/// Sélecteur segmenté pour le mode de réponse attendu (ouverte, choix unique, choix multiple).
 class AnswerTypeSelector extends StatelessWidget {
   final AnswerType selected;
   final ValueChanged<AnswerType> onChanged;
@@ -14,22 +15,24 @@ class AnswerTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return SegmentedButton<AnswerType>(
-      segments: const [
+      segments: [
         ButtonSegment(
           value: AnswerType.open,
-          label: Text('Ouverte'),
-          icon: Icon(Icons.edit),
+          label: Text(l.answerTypeOpen),
+          icon: const Icon(Icons.edit),
         ),
         ButtonSegment(
           value: AnswerType.singleChoice,
-          label: Text('Choix'),
-          icon: Icon(Icons.radio_button_checked),
+          label: Text(l.answerTypeSingle),
+          icon: const Icon(Icons.radio_button_checked),
         ),
         ButtonSegment(
           value: AnswerType.multipleChoice,
-          label: Text('Multiple'),
-          icon: Icon(Icons.check_box),
+          label: Text(l.answerTypeMultiple),
+          icon: const Icon(Icons.check_box),
         ),
       ],
       selected: {selected},
