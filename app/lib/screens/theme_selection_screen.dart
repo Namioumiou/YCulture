@@ -5,7 +5,7 @@ import '../models/question.dart';
 import '../models/theme.dart';
 import '../providers/quiz_provider.dart';
 import '../ui/app_theme.dart';
-import 'edit_question_screen.dart';
+import 'question_form_screen.dart';
 import 'quiz_screen.dart';
 
 class ThemeSelectionScreen extends StatelessWidget {
@@ -310,7 +310,7 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                                                 parentContext,
                                                 MaterialPageRoute(
                                                   builder: (context) =>
-                                                      EditQuestionScreen(
+                                                      QuestionFormScreen(
                                                         question: question,
                                                       ),
                                                 ),

@@ -69,9 +69,13 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final quizProvider = context.watch<QuizProvider>();
-    final percentage = (widget.correctAnswers / widget.totalQuestions * 100)
-        .round();
+    // Use context.select so only the changed XP/level field triggers a rebuild,
+    // not every unrelated provider notification (e.g. a question being added).
+    final level = context.select((QuizProvider p) => p.level);
+    final levelXp = context.select((QuizProvider p) => p.experiencePointsInCurrentLevel);
+    final xpPerLevel = context.select((QuizProvider p) => p.xpPerLevel);
+
+    final percentage = (widget.correctAnswers / widget.totalQuestions * 100).round();
     final ratio = widget.correctAnswers / widget.totalQuestions;
     final palette = _paletteForPercentage(percentage);
     final reviews = _buildReviews();
@@ -195,7 +199,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       Text(
                         _experienceGain!.didLevelUp
                             ? 'Bravo ! Niveau ${_experienceGain!.currentLevel} atteint.'
-                            : 'Niveau actuel: ${quizProvider.level}',
+                            : 'Niveau actuel: $level',
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 14),
@@ -203,8 +207,7 @@ class _ResultScreenState extends State<ResultScreen> {
                         borderRadius: BorderRadius.circular(999),
                         child: LinearProgressIndicator(
                           minHeight: 10,
-                          value: quizProvider.experiencePointsInCurrentLevel /
-                              quizProvider.xpPerLevel,
+                          value: levelXp / xpPerLevel,
                           backgroundColor: AppColors.border,
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             AppColors.secondary,
@@ -213,7 +216,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${quizProvider.experiencePointsInCurrentLevel}/${quizProvider.xpPerLevel} XP vers le niveau suivant',
+                        '$levelXp/$xpPerLevel XP vers le niveau suivant',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppColors.muted,
                             ),
