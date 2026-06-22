@@ -45,6 +45,8 @@ Toutes les données sont stockées **localement** sur l'appareil grâce à `shar
 | **Système XP / Niveaux** | Gagner de l'XP après chaque quiz, monter de niveau |
 | **Profil & avatar** | Choisir un avatar parmi une banque d'images prédéfinies |
 | **Persistance locale** | Toutes les données survivent au redémarrage de l'app |
+| **Historique détaillé** | Consulter la revue complète d'un quiz passé depuis le profil |
+| **Avatars déverrouillables** | Les avatars se débloquent en montant de niveau |
 
 ---
 
@@ -180,10 +182,14 @@ Cœur du jeu. Affiche les questions une par une avec :
 À la dernière question, calcule le score et navigue vers `ResultScreen`.
 
 ### `ResultScreen`
-Affiche le score final (pourcentage, fraction correcte/totale) avec une palette de couleurs contextuelle (vert si bon score, orange, rouge). Montre le gain d'XP et une éventuelle montée de niveau. Propose une revue détaillée question par question avec la réponse de l'utilisateur et la bonne réponse. Boutons pour rejouer ou retourner à l'accueil.
+Affiche le score final (pourcentage, fraction correcte/totale) avec une palette de couleurs contextuelle (vert si bon score, orange, rouge). Montre le gain d'XP et une éventuelle montée de niveau. Propose une revue détaillée question par question avec la réponse de l'utilisateur et la bonne réponse. Boutons pour **rejouer** le même quiz ou retourner à l'accueil.
+
+Cet écran est également utilisable en mode **lecture seule** (`isHistoryView: true`) pour consulter le détail d'un quiz passé depuis l'historique du profil, sans recalculer l'XP.
 
 ### `ProfileScreen`
-Affiche le niveau, la barre de progression d'XP, et l'historique de tous les quiz passés (thème, score, date). Permet de sélectionner un avatar parmi la banque d'images dans `assets/avatars/`.
+Affiche le niveau, la barre de progression d'XP, et l'historique des **10 derniers quiz** joués (thème, score, date). Un appui sur une entrée de l'historique ouvre la revue détaillée du quiz correspondant (`ResultScreen` en mode lecture seule).
+
+Permet de sélectionner un avatar parmi la banque d'images dans `assets/avatars/`. Les avatars sont **déverrouillés par niveau** : un nouvel avatar se débloque tous les deux emplacements (niveau 1 = avatars 1-2, niveau 2 = avatars 3-4, etc.).
 
 ### `CreateThemeScreen`
 Formulaire de création d'un thème (nom, description). Génère un UUID et sauvegarde via `QuizProvider.addTheme`.
