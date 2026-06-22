@@ -370,12 +370,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             const Icon(Icons.history_rounded, color: AppColors.muted, size: 28),
                             const SizedBox(width: 12),
-                            Text(
-                              'Aucun quizz effectué pour l\'instant.',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppColors.muted),
+                            Expanded(
+                              child: Text(
+                                'Aucun quizz effectué pour l\'instant.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: AppColors.muted),
+                              ),
                             ),
                           ],
                         ),
