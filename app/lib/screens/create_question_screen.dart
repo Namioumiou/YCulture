@@ -384,21 +384,19 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                     ),
                     const SizedBox(height: 10),
                     SegmentedButton<QuestionType>(
+                      showSelectedIcon: false,
                       segments: const [
                         ButtonSegment(
                           value: QuestionType.text,
                           label: Text('Texte'),
-                          icon: Icon(Icons.text_fields),
                         ),
                         ButtonSegment(
                           value: QuestionType.image,
                           label: Text('Image'),
-                          icon: Icon(Icons.image),
                         ),
                         ButtonSegment(
                           value: QuestionType.audio,
                           label: Text('Audio'),
-                          icon: Icon(Icons.audio_file),
                         ),
                       ],
                       selected: {_questionType},
@@ -543,21 +541,19 @@ class _CreateQuestionScreenState extends State<CreateQuestionScreen> {
                     ),
                     const SizedBox(height: 10),
                     SegmentedButton<AnswerType>(
+                      showSelectedIcon: false,
                       segments: const [
                         ButtonSegment(
                           value: AnswerType.open,
                           label: Text('Ouverte'),
-                          icon: Icon(Icons.edit),
                         ),
                         ButtonSegment(
                           value: AnswerType.singleChoice,
                           label: Text('Choix'),
-                          icon: Icon(Icons.radio_button_checked),
                         ),
                         ButtonSegment(
                           value: AnswerType.multipleChoice,
                           label: Text('Multiple'),
-                          icon: Icon(Icons.check_box),
                         ),
                       ],
                       selected: {_answerType},
