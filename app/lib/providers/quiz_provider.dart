@@ -52,6 +52,7 @@ class QuizProvider with ChangeNotifier {
     final themesJson = prefs.getString('themes');
     if (themesJson == null) {
       _initializeDefaultData();
+      await _saveData();
     } else {
       final themesList = jsonDecode(themesJson) as List;
       _themes.addAll(themesList.map((j) => QuizTheme.fromJson(j as Map<String, dynamic>)));
