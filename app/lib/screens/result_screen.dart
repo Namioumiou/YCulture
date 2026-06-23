@@ -51,6 +51,8 @@ class _ResultScreenState extends State<ResultScreen> {
             totalQuestions: widget.totalQuestions,
             correctAnswers: widget.correctAnswers,
             completedAt: DateTime.now(),
+            questions: widget.questions,
+            userAnswers: widget.userAnswers,
           ),
         );
 
@@ -220,7 +222,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 ),
               ],
-              if (!widget.isHistoryView && reviews.isNotEmpty) ...[  
+              if (reviews.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 AppSurfaceCard(
                   child: Column(
