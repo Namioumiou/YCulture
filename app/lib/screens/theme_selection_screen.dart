@@ -365,11 +365,14 @@ void _showDeleteQuestionDialog(BuildContext context, Question question) {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () {
-              Provider.of<QuizProvider>(
+            onPressed: () async {
+              await Provider.of<QuizProvider>(
                 context,
                 listen: false,
               ).deleteQuestion(question.id);
+              if (!context.mounted) {
+                return;
+              }
               Navigator.pop(dialogContext);
 
               ScaffoldMessenger.of(context).showSnackBar(

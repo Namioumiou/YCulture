@@ -21,7 +21,7 @@ class EditQuestionScreen extends StatelessWidget {
             themes: quizProvider.themes,
             initialQuestion: question,
             submitButtonLabel: 'Enregistrer',
-            onSubmit: (values) {
+            onSubmit: (values) async {
               final updated = question.copyWith(
                 text: values.text,
                 imageUrl: values.imageUrl,
@@ -33,7 +33,11 @@ class EditQuestionScreen extends StatelessWidget {
                 themeId: values.themeId,
               );
 
-              quizProvider.updateQuestion(updated);
+              await quizProvider.updateQuestion(updated);
+
+              if (!context.mounted) {
+                return;
+              }
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

@@ -37,12 +37,12 @@ class _ResultScreenState extends State<ResultScreen> {
   void initState() {
     super.initState();
     if (!widget.isHistoryView) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) {
           return;
         }
 
-        final experienceGain = Provider.of<QuizProvider>(
+        final experienceGain = await Provider.of<QuizProvider>(
           context,
           listen: false,
         ).addResult(

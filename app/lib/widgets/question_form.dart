@@ -37,7 +37,7 @@ class QuestionForm extends StatefulWidget {
   final List<QuizTheme> themes;
   final Question? initialQuestion;
   final String submitButtonLabel;
-  final ValueChanged<QuestionFormValues> onSubmit;
+  final Future<void> Function(QuestionFormValues) onSubmit;
 
   const QuestionForm({
     super.key,
@@ -256,7 +256,7 @@ class _QuestionFormState extends State<QuestionForm> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -357,7 +357,7 @@ class _QuestionFormState extends State<QuestionForm> {
       }
     }
 
-    widget.onSubmit(
+    await widget.onSubmit(
       QuestionFormValues(
         text: _questionController.text.trim(),
         imageUrl: _questionType == QuestionType.image ? _imagePath : null,

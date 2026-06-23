@@ -23,7 +23,7 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
     super.dispose();
   }
 
-  void _saveTheme() {
+  Future<void> _saveTheme() async {
     if (_formKey.currentState!.validate()) {
       final quizProvider = Provider.of<QuizProvider>(context, listen: false);
       
@@ -33,7 +33,11 @@ class _CreateThemeScreenState extends State<CreateThemeScreen> {
         description: _descriptionController.text.trim(),
       );
 
-      quizProvider.addTheme(newTheme);
+      await quizProvider.addTheme(newTheme);
+
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

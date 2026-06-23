@@ -34,7 +34,7 @@ class CreateQuestionScreen extends StatelessWidget {
           return QuestionForm(
             themes: themes,
             submitButtonLabel: 'Créer la question',
-            onSubmit: (values) {
+            onSubmit: (values) async {
               final newQuestion = Question(
                 id: quizProvider.generateId(),
                 text: values.text,
@@ -47,7 +47,11 @@ class CreateQuestionScreen extends StatelessWidget {
                 themeId: values.themeId,
               );
 
-              quizProvider.addQuestion(newQuestion);
+              await quizProvider.addQuestion(newQuestion);
+
+              if (!context.mounted) {
+                return;
+              }
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

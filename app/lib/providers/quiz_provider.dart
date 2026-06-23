@@ -67,20 +67,31 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persists in-memory state to shared preferences.
+  ///
+  /// Mutations update memory and call [notifyListeners] before invoking this
+  /// method. On failure, errors are logged with [debugPrint] and rethrown so
+  /// callers can surface feedback; in-memory state is left unchanged.
   Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('themes', jsonEncode(_themes.map((t) => t.toJson()).toList()));
-    await prefs.setString('questions', jsonEncode(_questions.map((q) => q.toJson()).toList()));
-    await prefs.setString('results', jsonEncode(_results.map((r) => r.toJson()).toList()));
-    await prefs.setInt('experience_points', _experiencePoints);
-    await prefs.setInt('xp_system_version', _xpSystemVersion);
-    if (_profileAvatarId == null || _profileAvatarId!.isEmpty) {
-      await prefs.remove('profile_avatar_id');
-    } else {
-      await prefs.setString('profile_avatar_id', _profileAvatarId!);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('themes', jsonEncode(_themes.map((t) => t.toJson()).toList()));
+      await prefs.setString('questions', jsonEncode(_questions.map((q) => q.toJson()).toList()));
+      await prefs.setString('results', jsonEncode(_results.map((r) => r.toJson()).toList()));
+      await prefs.setInt('experience_points', _experiencePoints);
+      await prefs.setInt('xp_system_version', _xpSystemVersion);
+      if (_profileAvatarId == null || _profileAvatarId!.isEmpty) {
+        await prefs.remove('profile_avatar_id');
+      } else {
+        await prefs.setString('profile_avatar_id', _profileAvatarId!);
+      }
+      // Cleanup legacy value from old gallery-based implementation.
+      await prefs.remove('profile_avatar_base64');
+    } on Object catch (error, stackTrace) {
+      debugPrint('QuizProvider: failed to persist data: $error');
+      debugPrint('$stackTrace');
+      rethrow;
     }
-    // Cleanup legacy value from old gallery-based implementation.
-    await prefs.remove('profile_avatar_base64');
   }
 
   void _initializeDefaultData() {
@@ -127,26 +138,30 @@ class QuizProvider with ChangeNotifier {
   }
 
   // Gestion des thèmes
-  void addTheme(QuizTheme theme) {
+
+  /// Adds a theme and persists it. Rethrows persistence errors from [_saveData].
+  Future<void> addTheme(QuizTheme theme) async {
     _themes.add(theme);
     notifyListeners();
-    _saveData();
+    await _saveData();
   }
 
-  void updateTheme(QuizTheme theme) {
+  /// Updates a theme and persists it. Rethrows persistence errors from [_saveData].
+  Future<void> updateTheme(QuizTheme theme) async {
     final index = _themes.indexWhere((t) => t.id == theme.id);
     if (index != -1) {
       _themes[index] = theme;
       notifyListeners();
-      _saveData();
+      await _saveData();
     }
   }
 
-  void deleteTheme(String themeId) {
+  /// Deletes a theme and its questions, then persists. Rethrows persistence errors.
+  Future<void> deleteTheme(String themeId) async {
     _themes.removeWhere((t) => t.id == themeId);
     _questions.removeWhere((q) => q.themeId == themeId);
     notifyListeners();
-    _saveData();
+    await _saveData();
   }
 
   QuizTheme? getThemeById(String id) {
@@ -158,25 +173,29 @@ class QuizProvider with ChangeNotifier {
   }
 
   // Gestion des questions
-  void addQuestion(Question question) {
+
+  /// Adds a question and persists it. Rethrows persistence errors from [_saveData].
+  Future<void> addQuestion(Question question) async {
     _questions.add(question);
     notifyListeners();
-    _saveData();
+    await _saveData();
   }
 
-  void updateQuestion(Question question) {
+  /// Updates a question and persists it. Rethrows persistence errors from [_saveData].
+  Future<void> updateQuestion(Question question) async {
     final index = _questions.indexWhere((q) => q.id == question.id);
     if (index != -1) {
       _questions[index] = question;
       notifyListeners();
-      _saveData();
+      await _saveData();
     }
   }
 
-  void deleteQuestion(String questionId) {
+  /// Deletes a question and persists. Rethrows persistence errors from [_saveData].
+  Future<void> deleteQuestion(String questionId) async {
     _questions.removeWhere((q) => q.id == questionId);
     notifyListeners();
-    _saveData();
+    await _saveData();
   }
 
   List<Question> getQuestionsByTheme(String themeId) {
@@ -184,7 +203,9 @@ class QuizProvider with ChangeNotifier {
   }
 
   // Gestion des résultats
-  ExperienceGain addResult(QuizResult result) {
+
+  /// Records a quiz result, awards XP, and persists. Rethrows persistence errors.
+  Future<ExperienceGain> addResult(QuizResult result) async {
     final previousExperiencePoints = _experiencePoints;
     final previousLevel = level;
     final gainedExperiencePoints = _calculateExperienceGain(
@@ -198,7 +219,7 @@ class QuizProvider with ChangeNotifier {
     final currentLevel = level;
 
     notifyListeners();
-    _saveData();
+    await _saveData();
 
     return ExperienceGain(
       gainedExperiencePoints: gainedExperiencePoints,
@@ -272,12 +293,14 @@ class QuizProvider with ChangeNotifier {
     return _results.where((r) => r.themeId == themeId).toList();
   }
 
+  /// Sets the profile avatar and persists. Rethrows persistence errors from [_saveData].
   Future<void> setProfileAvatar(String avatarId) async {
     _profileAvatarId = avatarId;
     notifyListeners();
     await _saveData();
   }
 
+  /// Clears the profile avatar and persists. Rethrows persistence errors from [_saveData].
   Future<void> clearProfileAvatar() async {
     _profileAvatarId = null;
     notifyListeners();
