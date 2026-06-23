@@ -16,6 +16,7 @@ Application mobile de quiz personnalisable, développée en Flutter dans le cadr
 8. [Thème visuel](#thème-visuel)
 9. [Dépendances](#dépendances)
 10. [Lancer le projet](#lancer-le-projet)
+11. [Tests](#tests)
 
 ---
 
@@ -40,7 +41,7 @@ Toutes les données sont stockées **localement** sur l'appareil grâce à `shar
 | **3 types de réponses** | Choix unique, choix multiple, réponse ouverte (saisie libre) |
 | **Création de thèmes** | Nom, description et icône optionnelle |
 | **Création de questions** | Éditeur complet avec media picker (image / audio) |
-| **Édition / suppression** | Modifier ou supprimer thèmes et questions existants |
+| **Édition / suppression de questions** | Modifier ou supprimer des questions depuis la gestion d'un thème |
 | **Résultats détaillés** | Score, pourcentage, revue question par question |
 | **Système XP / Niveaux** | Gagner de l'XP après chaque quiz, monter de niveau |
 | **Profil & avatar** | Choisir un avatar parmi une banque d'images prédéfinies |
@@ -58,7 +59,7 @@ app/
 │   ├── main.dart                  # Point d'entrée, configuration du Provider et du thème
 │   ├── models/
 │   │   ├── question.dart          # Modèle Question + enums QuestionType / AnswerType
-│   │   ├── quiz_result.dart       # Modèle QuizResult (score + date)
+│   │   ├── quiz_result.dart       # Modèle QuizResult (score, date, snapshot des réponses)
 │   │   └── theme.dart             # Modèle QuizTheme
 │   ├── providers/
 │   │   └── quiz_provider.dart     # État global (thèmes, questions, résultats, XP)
@@ -69,12 +70,16 @@ app/
 │   │   ├── result_screen.dart     # Résultats, XP gagné, revue des réponses
 │   │   ├── profile_screen.dart    # Profil : niveau, XP, historique, avatar
 │   │   ├── create_theme_screen.dart    # Formulaire de création de thème
-│   │   ├── create_question_screen.dart # Formulaire de création de question
-│   │   └── edit_question_screen.dart   # Formulaire d'édition de question
+│   │   ├── create_question_screen.dart # Écran de création (délègue à QuestionForm)
+│   │   └── edit_question_screen.dart   # Écran d'édition (délègue à QuestionForm)
+│   ├── widgets/
+│   │   └── question_form.dart     # Formulaire partagé création / édition de question
 │   └── ui/
 │       └── app_theme.dart         # Palette de couleurs, typographie, ThemeData global
 ├── assets/
 │   └── avatars/                   # Images d'avatars incluses dans le bundle
+├── test/
+│   └── widget_test.dart           # Test widget de démarrage (écran d'accueil)
 └── pubspec.yaml
 ```
 
@@ -131,8 +136,12 @@ Enregistre le résultat d'une session de quiz.
 | `totalQuestions` | `int` | Nombre total de questions |
 | `correctAnswers` | `int` | Nombre de bonnes réponses |
 | `completedAt` | `DateTime` | Date et heure de la session |
+| `questions` | `List<Question>` | Snapshot des questions jouées (pour l'historique) |
+| `userAnswers` | `Map<int, dynamic>` | Réponses de l'utilisateur, indexées par numéro de question |
 
 La propriété calculée `percentage` retourne le score en pourcentage.
+
+Les champs `questions` et `userAnswers` sont sérialisés avec le résultat afin de permettre la revue détaillée depuis l'historique du profil. Les entrées enregistrées avant cette évolution n'ont pas de snapshot : seul le score reste consultable.
 
 ---
 
@@ -142,11 +151,11 @@ La propriété calculée `percentage` retourne le score en pourcentage.
 
 ### Responsabilités
 
-- **Chargement** : lit les données JSON stockées dans `SharedPreferences` au démarrage. Si aucune donnée n'existe, initialise un thème "Culture Générale" avec 3 questions d'exemple.
-- **Persistance** : réécrit l'intégralité des données dans `SharedPreferences` à chaque mutation.
-- **CRUD thèmes** : `addTheme`, `updateTheme`, `deleteTheme` (supprime aussi les questions associées).
+- **Chargement** : lit les données JSON stockées dans `SharedPreferences` au démarrage. Si aucune donnée n'existe, initialise un thème "Culture Générale" avec 3 questions d'exemple, puis **persiste immédiatement** ce jeu de données par défaut.
+- **Persistance** : réécrit l'intégralité des données dans `SharedPreferences` à chaque mutation. Les méthodes de modification (`addTheme`, `updateTheme`, `deleteTheme`, `addQuestion`, `updateQuestion`, `deleteQuestion`, `addResult`, `setProfileAvatar`, `clearProfileAvatar`) sont **asynchrones** (`Future`) et attendent la fin de l'écriture. En cas d'échec, l'erreur est journalisée puis propagée pour que l'interface puisse réagir.
+- **CRUD thèmes** : `addTheme`, `updateTheme`, `deleteTheme` (supprime aussi les questions associées). L'édition et la suppression de thèmes sont exposées au niveau du provider ; l'interface ne propose pour l'instant que la création de thèmes.
 - **CRUD questions** : `addQuestion`, `updateQuestion`, `deleteQuestion`.
-- **Résultats** : `addResult` enregistre la session et calcule le gain d'XP.
+- **Résultats** : `addResult` enregistre la session (y compris le snapshot questions / réponses), calcule le gain d'XP et persiste.
 - **Profil** : `setProfileAvatar` / `clearProfileAvatar` pour l'avatar.
 
 ### Propriétés exposées
@@ -184,7 +193,7 @@ Cœur du jeu. Affiche les questions une par une avec :
 ### `ResultScreen`
 Affiche le score final (pourcentage, fraction correcte/totale) avec une palette de couleurs contextuelle (vert si bon score, orange, rouge). Montre le gain d'XP et une éventuelle montée de niveau. Propose une revue détaillée question par question avec la réponse de l'utilisateur et la bonne réponse. Boutons pour **rejouer** le même quiz ou retourner à l'accueil.
 
-Cet écran est également utilisable en mode **lecture seule** (`isHistoryView: true`) pour consulter le détail d'un quiz passé depuis l'historique du profil, sans recalculer l'XP.
+Cet écran est également utilisable en mode **lecture seule** (`isHistoryView: true`) pour consulter le détail d'un quiz passé depuis l'historique du profil, sans recalculer l'XP. Le corrigé détaillé s'appuie sur le snapshot `questions` / `userAnswers` stocké dans `QuizResult`.
 
 ### `ProfileScreen`
 Affiche le niveau, la barre de progression d'XP, et l'historique des **10 derniers quiz** joués (thème, score, date). Un appui sur une entrée de l'historique ouvre la revue détaillée du quiz correspondant (`ResultScreen` en mode lecture seule).
@@ -194,16 +203,22 @@ Permet de sélectionner un avatar parmi la banque d'images dans `assets/avatars/
 ### `CreateThemeScreen`
 Formulaire de création d'un thème (nom, description). Génère un UUID et sauvegarde via `QuizProvider.addTheme`.
 
-### `CreateQuestionScreen`
-Formulaire complet de création d'une question :
+### `QuestionForm` (`widgets/question_form.dart`)
+Widget partagé qui centralise le formulaire de création et d'édition d'une question :
 - sélection du thème cible,
 - choix du `QuestionType` (texte / image / audio),
 - choix de l'`AnswerType` (choix unique / multiple / ouvert),
 - ajout des propositions et des bonnes réponses,
-- sélection d'image via `image_picker` ou d'audio via `file_picker` / `record`.
+- sélection d'image via `image_picker` ou d'audio via `file_picker` / `record`,
+- validation des champs obligatoires avant soumission.
+
+Expose un callback `onSubmit` appelé avec un objet `QuestionFormValues`.
+
+### `CreateQuestionScreen`
+Écran léger qui affiche `QuestionForm` en mode création. À la soumission, construit une `Question`, appelle `QuizProvider.addQuestion` et retourne à l'écran précédent.
 
 ### `EditQuestionScreen`
-Identique à `CreateQuestionScreen` mais pré-remplit les champs avec les données existantes. Permet aussi la suppression de la question.
+Écran léger qui affiche `QuestionForm` pré-rempli avec une question existante. À la soumission, appelle `QuizProvider.updateQuestion`. La suppression d'une question se fait depuis `ThemeSelectionScreen`.
 
 ---
 
@@ -297,4 +312,36 @@ flutter build apk --release
 ```
 
 Les données de l'application sont stockées localement sur l'appareil. Aucune configuration de serveur ou de clé API n'est nécessaire.
+
+---
+
+## Tests
+
+### Analyse statique
+
+```bash
+cd app
+flutter analyze
+```
+
+### Tests automatisés
+
+Un test widget de fumée vérifie le démarrage de l'application : affichage du chargement initial, puis de l'écran d'accueil.
+
+```bash
+cd app
+flutter test
+```
+
+Le test mocke `SharedPreferences` avec des valeurs vides pour simuler une première installation.
+
+### Vérifications manuelles recommandées
+
+| Scénario | Attendu |
+|---|---|
+| Première installation | Le thème « Culture Générale » et ses 3 questions sont présents après redémarrage |
+| Fin de quiz | Le corrigé détaillé s'affiche sur l'écran de résultats |
+| Historique (profil) | Un appui sur un quiz récent rouvre le corrigé détaillé |
+| Création / édition de question | Le formulaire partagé fonctionne pour les 3 types de questions et de réponses |
+| Persistance | Thèmes, questions, avatar et historique survivent à un redémarrage de l'app |
 
