@@ -1,0 +1,2 @@
+# This folder stores PostgreSQL and Redis data
+# Subfolders are ignored by git but the folder structure is preserved

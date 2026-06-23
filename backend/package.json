@@ -1,0 +1,56 @@
+{
+  "name": "yculture",
+  "version": "1.0.0",
+  "description": "Application de Quizz sur téléphone",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:setup": "tsx scripts/setup-db.ts --seed",
+    "db:reset": "tsx scripts/setup-db.ts --reset --seed",
+    "db:migrate": "tsx scripts/setup-db.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v && rm -rf data/postgres/pgdata/* data/redis/appendonlydir/*",
+    "db:shell": "docker exec -it yculture-postgres psql -U yculture -d yculture",
+    "redis:cli": "docker exec -it yculture-redis redis-cli",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Namioumiou/YCulture.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Namioumiou/YCulture/issues"
+  },
+  "homepage": "https://github.com/Namioumiou/YCulture#readme",
+  "dependencies": {
+    "@types/swagger-ui-express": "^4.1.8",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.18.0",
+    "redis": "^5.10.0",
+    "socket.io": "^4.8.3",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^25.2.0",
+    "@types/pg": "^8.11.10",
+    "@types/swagger-ui-express": "^4.1.6",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
