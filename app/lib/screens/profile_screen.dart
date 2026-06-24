@@ -26,14 +26,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadAvatarBank() async {
     final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-    final avatarAssets = manifest.listAssets()
-        .where(
-          (asset) =>
-              asset.startsWith(_avatarDirectory) &&
-              (asset.endsWith('.png') || asset.endsWith('.jpg') || asset.endsWith('.jpeg') || asset.endsWith('.webp')),
-        )
-        .toList()
-      ..sort();
+    final avatarAssets =
+        manifest
+            .listAssets()
+            .where(
+              (asset) =>
+                  asset.startsWith(_avatarDirectory) &&
+                  (asset.endsWith('.png') ||
+                      asset.endsWith('.jpg') ||
+                      asset.endsWith('.jpeg') ||
+                      asset.endsWith('.webp')),
+            )
+            .toList()
+          ..sort();
 
     if (!mounted) {
       return;
@@ -59,10 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   _AvatarPreset _resolveAvatar(String? avatarId) {
     if (_avatarBank.isEmpty) {
-      return const _AvatarPreset(
-        id: 'placeholder',
-        imagePath: '',
-      );
+      return const _AvatarPreset(id: 'placeholder', imagePath: '');
     }
 
     return _avatarBank.firstWhere(
@@ -76,16 +78,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avatar mis a jour')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Avatar mis a jour')));
   }
 
   int _requiredLevelForAvatarIndex(int index) {
     return 1 + (index ~/ 2);
   }
 
-  Future<void> _openAvatarPicker(String? selectedAvatarId, int userLevel) async {
+  Future<void> _openAvatarPicker(
+    String? selectedAvatarId,
+    int userLevel,
+  ) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -101,16 +106,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Choisir un avatar',
+                    'Choisir votre avatar',
                     style: Theme.of(context).textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Certains avatars se debloquent avec votre niveau.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.muted,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
@@ -118,11 +123,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: _avatarBank.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
                     itemBuilder: (context, index) {
                       final avatar = _avatarBank[index];
                       final isSelected = avatar.id == selectedAvatarId;
@@ -151,7 +157,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : AppColors.border,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
                               width: isSelected ? 2.2 : 1,
                             ),
                           ),
@@ -241,8 +249,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         'Ajoutez des images dans assets/avatars pour les afficher ici.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.muted,
-                            ),
+                          color: AppColors.muted,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -257,7 +265,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final levelXp = quizProvider.experiencePointsInCurrentLevel;
             final xpPerLevel = quizProvider.xpPerLevel;
 
-            final recentResults = quizProvider.results.reversed.take(10).toList();
+            final recentResults = quizProvider.results.reversed
+                .take(10)
+                .toList();
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -268,13 +278,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         GestureDetector(
-                          onTap: () => _openAvatarPicker(selectedAvatarId, level),
+                          onTap: () =>
+                              _openAvatarPicker(selectedAvatarId, level),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   blurRadius: 24,
                                   offset: const Offset(0, 12),
                                 ),
@@ -282,7 +295,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 64,
-                              backgroundColor: AppColors.primary.withValues(alpha: 0.14),
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.14,
+                              ),
                               child: ClipOval(
                                 child: Image.asset(
                                   selectedPreset.imagePath,
@@ -342,9 +357,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   minHeight: 9,
                                   value: levelXp / xpPerLevel,
                                   backgroundColor: AppColors.border,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                    AppColors.primary,
-                                  ),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        AppColors.primary,
+                                      ),
                                 ),
                               ),
                             ],
@@ -358,8 +374,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     'Historique des quizz',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   if (recentResults.isEmpty)
@@ -368,14 +384,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Row(
                           children: [
-                            const Icon(Icons.history_rounded, color: AppColors.muted, size: 28),
+                            const Icon(
+                              Icons.history_rounded,
+                              color: AppColors.muted,
+                              size: 28,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'Aucun quizz effectué pour l\'instant.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: AppColors.muted),
                               ),
                             ),
@@ -392,19 +410,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const Divider(height: 1, color: AppColors.border),
                             _QuizHistoryRow(
                               result: recentResults[i],
-                              themeName: quizProvider
+                              themeName:
+                                  quizProvider
                                       .getThemeById(recentResults[i].themeId)
                                       ?.name ??
                                   'Thème supprimé',
                               onTap: () {
-                                final theme = quizProvider.getThemeById(recentResults[i].themeId);
+                                final theme = quizProvider.getThemeById(
+                                  recentResults[i].themeId,
+                                );
                                 if (theme == null) return;
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => ResultScreen(
                                       theme: theme,
-                                      totalQuestions: recentResults[i].totalQuestions,
-                                      correctAnswers: recentResults[i].correctAnswers,
+                                      totalQuestions:
+                                          recentResults[i].totalQuestions,
+                                      correctAnswers:
+                                          recentResults[i].correctAnswers,
                                       questions: recentResults[i].questions,
                                       userAnswers: recentResults[i].userAnswers,
                                       isHistoryView: true,
@@ -432,7 +455,11 @@ class _QuizHistoryRow extends StatelessWidget {
   final String themeName;
   final VoidCallback? onTap;
 
-  const _QuizHistoryRow({required this.result, required this.themeName, this.onTap});
+  const _QuizHistoryRow({
+    required this.result,
+    required this.themeName,
+    this.onTap,
+  });
 
   Color _scoreColor(double percentage) {
     if (percentage >= 80) return AppColors.primary;
@@ -457,60 +484,58 @@ class _QuizHistoryRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '${pct.round()}%',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  themeName,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatDate(result.completedAt),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: AppColors.muted),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${result.correctAnswers}/${result.totalQuestions}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${pct.round()}%',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,
                 ),
-          ),
-        ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    themeName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatDate(result.completedAt),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.muted),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${result.correctAnswers}/${result.totalQuestions}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -519,8 +544,5 @@ class _AvatarPreset {
   final String id;
   final String imagePath;
 
-  const _AvatarPreset({
-    required this.id,
-    required this.imagePath,
-  });
+  const _AvatarPreset({required this.id, required this.imagePath});
 }
