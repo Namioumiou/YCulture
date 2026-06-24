@@ -13,55 +13,55 @@ class AppColors {
 }
 
 ThemeData buildAppTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: AppColors.primary,
-    brightness: Brightness.light,
-  ).copyWith(
-    primary: AppColors.primary,
-    secondary: AppColors.secondary,
-    tertiary: AppColors.accent,
-    surface: AppColors.surface,
-    onSurface: AppColors.ink,
-    outline: AppColors.border,
-  );
+  final colorScheme =
+      ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+        tertiary: AppColors.accent,
+        surface: AppColors.surface,
+        onSurface: AppColors.ink,
+        outline: AppColors.border,
+      );
 
-  final textTheme = GoogleFonts.manropeTextTheme().copyWith(
-    displayLarge: GoogleFonts.manrope(
-      fontWeight: FontWeight.w800,
-      letterSpacing: -1.4,
-    ),
-    displayMedium: GoogleFonts.manrope(
-      fontWeight: FontWeight.w800,
-      letterSpacing: -1.1,
-    ),
-    headlineLarge: GoogleFonts.manrope(
-      fontWeight: FontWeight.w800,
-      letterSpacing: -0.8,
-    ),
-    headlineMedium: GoogleFonts.manrope(
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.5,
-    ),
-    titleLarge: GoogleFonts.manrope(
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.3,
-    ),
-    bodyLarge: GoogleFonts.manrope(
-      fontWeight: FontWeight.w500,
-      height: 1.4,
-    ),
-    bodyMedium: GoogleFonts.manrope(
-      fontWeight: FontWeight.w500,
-      height: 1.4,
-    ),
-    labelLarge: GoogleFonts.manrope(
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0,
-    ),
-  ).apply(
-    bodyColor: AppColors.ink,
-    displayColor: AppColors.ink,
-  );
+  final textTheme = GoogleFonts.manropeTextTheme()
+      .copyWith(
+        displayLarge: GoogleFonts.manrope(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.4,
+        ),
+        displayMedium: GoogleFonts.manrope(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -1.1,
+        ),
+        headlineLarge: GoogleFonts.manrope(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.8,
+        ),
+        headlineMedium: GoogleFonts.manrope(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.5,
+        ),
+        titleLarge: GoogleFonts.manrope(
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+        bodyLarge: GoogleFonts.manrope(
+          fontWeight: FontWeight.w500,
+          height: 1.4,
+        ),
+        bodyMedium: GoogleFonts.manrope(
+          fontWeight: FontWeight.w500,
+          height: 1.4,
+        ),
+        labelLarge: GoogleFonts.manrope(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      )
+      .apply(bodyColor: AppColors.ink, displayColor: AppColors.ink);
 
   return ThemeData(
     useMaterial3: true,
@@ -81,7 +81,7 @@ ThemeData buildAppTheme() {
       color: AppColors.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -229,11 +229,7 @@ class AppBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFDFBF6),
-            Color(0xFFF4F7FF),
-            Color(0xFFFFF2E7),
-          ],
+          colors: [Color(0xFFFDFBF6), Color(0xFFF4F7FF), Color(0xFFFFF2E7)],
         ),
       ),
       child: Stack(
@@ -360,9 +356,9 @@ class AppInfoChip extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: color,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: color),
           ),
         ],
       ),
@@ -374,28 +370,21 @@ class AppSectionTitle extends StatelessWidget {
   final String title;
   final String? subtitle;
 
-  const AppSectionTitle({
-    super.key,
-    required this.title,
-    this.subtitle,
-  });
+  const AppSectionTitle({super.key, required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
         if (subtitle != null) ...[
           const SizedBox(height: 6),
           Text(
             subtitle!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.muted,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
           ),
         ],
       ],
