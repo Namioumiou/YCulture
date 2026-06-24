@@ -71,7 +71,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Bienvenue sur YCulture, votre application de quiz personnalisable ✨',
+                            'Bienvenue sur YCulture, votre application de quiz personnalisable ✨🎉',
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(color: AppColors.muted),
                           ),
