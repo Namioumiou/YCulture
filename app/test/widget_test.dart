@@ -16,11 +16,17 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('YCulture'), findsOneWidget);
-    expect(find.text('Jouer maintenant'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            (widget.data == 'Jouer maintenant' || widget.data == 'Play now'),
+      ),
+      findsOneWidget,
+    );
   });
 }

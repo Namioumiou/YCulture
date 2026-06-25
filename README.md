@@ -155,8 +155,9 @@ Les champs `questions` et `userAnswers` sont sérialisés avec le résultat afin
 - **Persistance** : réécrit l'intégralité des données dans `SharedPreferences` à chaque mutation. Les méthodes de modification (`addTheme`, `updateTheme`, `deleteTheme`, `addQuestion`, `updateQuestion`, `deleteQuestion`, `addResult`, `setProfileAvatar`, `clearProfileAvatar`) sont **asynchrones** (`Future`) et attendent la fin de l'écriture. En cas d'échec, l'erreur est journalisée puis propagée pour que l'interface puisse réagir.
 - **CRUD thèmes** : `addTheme`, `updateTheme`, `deleteTheme` (supprime aussi les questions associées). L'édition et la suppression de thèmes sont exposées au niveau du provider ; l'interface ne propose pour l'instant que la création de thèmes.
 - **CRUD questions** : `addQuestion`, `updateQuestion`, `deleteQuestion`.
-- **Résultats** : `addResult` enregistre la session (y compris le snapshot questions / réponses), calcule le gain d'XP et persiste.
+- **Résultats** : `addResult` enregistre la session (y compris le snapshot questions / réponses), calcule le gain d'XP, retourne un objet `ExperienceGain` décrivant la progression et persiste.
 - **Profil** : `setProfileAvatar` / `clearProfileAvatar` pour l'avatar.
+- **Requêtes** : `getThemeById`, `getQuestionsByTheme`, `getResultsByTheme` pour accéder aux données filtrées ; `generateId` pour générer un UUID.
 
 ### Propriétés exposées
 
@@ -171,6 +172,18 @@ Les champs `questions` et `userAnswers` sont sérialisés avec le résultat afin
 | `experiencePointsInCurrentLevel` | XP progressé dans le niveau courant |
 | `xpPerLevel` | XP requis pour passer au niveau suivant |
 | `profileAvatarId` | Identifiant de l'avatar sélectionné |
+
+### `ExperienceGain`
+
+Objet retourné par `addResult`, décrivant la progression XP après une session.
+
+| Champ | Type | Description |
+|---|---|---|
+| `gainedExperiencePoints` | `int` | XP gagné durant cette session |
+| `previousLevel` | `int` | Niveau avant la session |
+| `currentLevel` | `int` | Niveau après la session |
+| `previousExperiencePoints` | `int` | XP total avant la session |
+| `currentExperiencePoints` | `int` | XP total après la session |
 
 ---
 
@@ -195,10 +208,12 @@ Affiche le score final (pourcentage, fraction correcte/totale) avec une palette 
 
 Cet écran est également utilisable en mode **lecture seule** (`isHistoryView: true`) pour consulter le détail d'un quiz passé depuis l'historique du profil, sans recalculer l'XP. Le corrigé détaillé s'appuie sur le snapshot `questions` / `userAnswers` stocké dans `QuizResult`.
 
-### `ProfileScreen`
-Affiche le niveau, la barre de progression d'XP, et l'historique des **10 derniers quiz** joués (thème, score, date). Un appui sur une entrée de l'historique ouvre la revue détaillée du quiz correspondant (`ResultScreen` en mode lecture seule).
+Accepte un paramètre `isHistoryView` : lorsqu'il est à `true`, l'écran est affiché depuis l'historique du profil — les boutons de relance et le gain d'XP ne sont pas affichés.
 
-Permet de sélectionner un avatar parmi la banque d'images dans `assets/avatars/`. Les avatars sont **déverrouillés par niveau** : un nouvel avatar se débloque tous les deux emplacements (niveau 1 = avatars 1-2, niveau 2 = avatars 3-4, etc.).
+### `ProfileScreen`
+Affiche le niveau, la barre de progression d'XP, et l'historique des **10 derniers quiz** joués (thème, score, date). Un appui sur une entrée de l'historique ouvre `ResultScreen` en mode `isHistoryView`.
+
+Permet de sélectionner un avatar parmi la banque d'images dans `assets/avatars/`. Les avatars sont déverrouillés progressivement selon le niveau du joueur : les deux premiers avatars (indices 0 et 1) sont accessibles dès le niveau 1, les deux suivants (indices 2 et 3) au niveau 2, et ainsi de suite. La formule est : `niveau requis = 1 + (index ~/ 2)`.
 
 ### `CreateThemeScreen`
 Formulaire de création d'un thème (nom, description). Génère un UUID et sauvegarde via `QuizProvider.addTheme`.

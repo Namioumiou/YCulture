@@ -1,9 +1,16 @@
 import 'question.dart';
 
+/// Résultat d'une session de quiz complétée.
+///
+/// Stocké dans l'historique de l'utilisateur (10 derniers résultats affichés).
 class QuizResult {
+  /// Identifiant du [QuizTheme] joué.
   final String themeId;
+
   final int totalQuestions;
   final int correctAnswers;
+
+  /// Horodatage de la fin du quiz (heure locale).
   final DateTime completedAt;
   final List<Question> questions;
   final Map<int, dynamic> userAnswers;
@@ -17,8 +24,10 @@ class QuizResult {
     this.userAnswers = const {},
   });
 
+  /// Score exprimé en pourcentage, dans l'intervalle [0, 100].
   double get percentage => (correctAnswers / totalQuestions) * 100;
 
+  /// Construit un [QuizResult] depuis un objet JSON stocké dans [SharedPreferences].
   factory QuizResult.fromJson(Map<String, dynamic> json) {
     final questionsJson = json['questions'] as List?;
     final userAnswersJson = json['userAnswers'] as Map<String, dynamic>?;
@@ -46,6 +55,7 @@ class QuizResult {
     );
   }
 
+  /// Sérialise le résultat en JSON pour la persistance locale.
   Map<String, dynamic> toJson() => {
         'themeId': themeId,
         'totalQuestions': totalQuestions,
