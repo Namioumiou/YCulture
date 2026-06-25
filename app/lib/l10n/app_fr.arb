@@ -244,6 +244,8 @@
   "@questionFormMinAnswer": {},
   "questionFormSelectCorrect": "Veuillez sélectionner au moins une bonne réponse",
   "@questionFormSelectCorrect": {},
+  "questionFormMinChoices": "Ajoutez au moins deux choix de réponse",
+  "@questionFormMinChoices": {},
 
   "answerTypeOpen": "Ouverte",
   "@answerTypeOpen": {},

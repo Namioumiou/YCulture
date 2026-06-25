@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/question.dart';
 import '../models/theme.dart';
 import '../ui/app_theme.dart';
@@ -137,6 +138,12 @@ class _QuestionFormState extends State<QuestionForm> {
     }
   }
 
+  void _showSnack(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
@@ -149,15 +156,9 @@ class _QuestionFormState extends State<QuestionForm> {
   }
 
   Future<void> _pickAudio() async {
+    final l = AppLocalizations.of(context);
     if (_isRecording) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Arrêtez l\'enregistrement avant d\'importer un audio.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnack(l.audioStopFirst, Colors.orange);
       return;
     }
 
@@ -169,12 +170,7 @@ class _QuestionFormState extends State<QuestionForm> {
         _audioPath = selectedPath;
       });
     } else if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible de récupérer ce fichier audio.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnack(l.audioRetrieveError, Colors.red);
     }
   }
 
@@ -197,20 +193,14 @@ class _QuestionFormState extends State<QuestionForm> {
   }
 
   Future<void> _startRecording() async {
+    final l = AppLocalizations.of(context);
     final hasPermission = await _audioRecorder.hasPermission();
     if (!hasPermission) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'L\'accès au microphone est nécessaire pour enregistrer.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnack(l.audioPermission, Colors.orange);
       return;
     }
 
@@ -247,50 +237,29 @@ class _QuestionFormState extends State<QuestionForm> {
     });
 
     if (recordedPath == null || recordedPath.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun fichier audio n\'a été généré.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnack(AppLocalizations.of(context).audioNoFile, Colors.red);
     }
   }
 
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_isRecording) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Arrêtez l\'enregistrement avant d\'enregistrer la question.',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnack(l.questionFormStopRecording, Colors.orange);
       return;
     }
 
     if (_selectedThemeId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner un thème'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnack(l.questionFormSelectTheme, Colors.orange);
       return;
     }
 
     if (_questionType == QuestionType.audio &&
         (_audioPath == null || _audioPath!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner un fichier audio'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _showSnack(l.questionFormSelectAudio, Colors.orange);
       return;
     }
 
@@ -306,12 +275,7 @@ class _QuestionFormState extends State<QuestionForm> {
           .toList();
 
       if (correctAnswers.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez entrer au moins une réponse attendue'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnack(l.questionFormMinAnswer, Colors.orange);
         return;
       }
     } else {
@@ -321,22 +285,12 @@ class _QuestionFormState extends State<QuestionForm> {
           .toList();
 
       if (choices.length < 2) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ajoutez au moins deux choix de réponse'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnack(l.questionFormMinChoices, Colors.orange);
         return;
       }
 
       if (_correctChoiceIndices.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner au moins une bonne réponse'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnack(l.questionFormSelectCorrect, Colors.orange);
         return;
       }
 
@@ -347,12 +301,7 @@ class _QuestionFormState extends State<QuestionForm> {
           .toList();
 
       if (correctAnswers.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sélectionnez une bonne réponse valide'),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        _showSnack(l.questionFormSelectCorrect, Colors.orange);
         return;
       }
     }
@@ -373,6 +322,8 @@ class _QuestionFormState extends State<QuestionForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -389,7 +340,7 @@ class _QuestionFormState extends State<QuestionForm> {
                     DropdownButtonFormField<String>(
                       initialValue: _selectedThemeId,
                       decoration: InputDecoration(
-                        labelText: 'Thème',
+                        labelText: l.questionFormThemeLabel,
                         prefixIcon: const Icon(Icons.category),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -410,15 +361,15 @@ class _QuestionFormState extends State<QuestionForm> {
                       },
                       validator: (value) {
                         if (value == null) {
-                          return 'Veuillez sélectionner un thème';
+                          return l.questionFormThemeError;
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Type de question',
-                      style: TextStyle(
+                    Text(
+                      l.questionFormQuestionTypeLabel,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -426,18 +377,18 @@ class _QuestionFormState extends State<QuestionForm> {
                     const SizedBox(height: 10),
                     SegmentedButton<QuestionType>(
                       showSelectedIcon: false,
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: QuestionType.text,
-                          label: Text('Texte'),
+                          label: Text(l.questionTypeText),
                         ),
                         ButtonSegment(
                           value: QuestionType.image,
-                          label: Text('Image'),
+                          label: Text(l.questionTypeImage),
                         ),
                         ButtonSegment(
                           value: QuestionType.audio,
-                          label: Text('Audio'),
+                          label: Text(l.questionTypeAudio),
                         ),
                       ],
                       selected: {_questionType},
@@ -457,8 +408,8 @@ class _QuestionFormState extends State<QuestionForm> {
                       controller: _questionController,
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
-                        labelText: 'Question',
-                        hintText: 'Entrez votre question',
+                        labelText: l.questionFormQuestionLabel,
+                        hintText: l.questionFormQuestionHint,
                         prefixIcon: const Icon(Icons.help_outline),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -470,7 +421,7 @@ class _QuestionFormState extends State<QuestionForm> {
                       maxLines: null,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Veuillez entrer une question';
+                          return l.questionFormQuestionError;
                         }
                         return null;
                       },
@@ -484,8 +435,8 @@ class _QuestionFormState extends State<QuestionForm> {
                             icon: const Icon(Icons.add_photo_alternate),
                             label: Text(
                               _imagePath == null
-                                  ? 'Ajouter une image'
-                                  : 'Image sélectionnée',
+                                  ? l.questionFormAddImage
+                                  : l.questionFormImageSelected,
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
@@ -508,8 +459,8 @@ class _QuestionFormState extends State<QuestionForm> {
                             icon: const Icon(Icons.audiotrack),
                             label: Text(
                               _audioPath == null
-                                  ? 'Ajouter un fichier audio'
-                                  : 'Audio sélectionné',
+                                  ? l.audioImport
+                                  : l.audioSelected,
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
@@ -530,9 +481,7 @@ class _QuestionFormState extends State<QuestionForm> {
                               _isRecording ? Icons.stop_circle : Icons.mic,
                             ),
                             label: Text(
-                              _isRecording
-                                  ? 'Arrêter l\'enregistrement'
-                                  : 'Enregistrer un audio',
+                              _isRecording ? l.audioStop : l.audioRecord,
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
@@ -546,9 +495,9 @@ class _QuestionFormState extends State<QuestionForm> {
                           ),
                           if (_isRecording) ...[
                             const SizedBox(height: 12),
-                            const Text(
-                              'Enregistrement en cours...',
-                              style: TextStyle(
+                            Text(
+                              l.audioRecordingLabel,
+                              style: const TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -557,7 +506,9 @@ class _QuestionFormState extends State<QuestionForm> {
                           if (_audioPath != null && _audioPath!.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             Text(
-                              'Fichier actuel : ${_audioPath!.split(RegExp(r'[\\/]')).last}',
+                              l.audioFileLabel(
+                                _audioPath!.split(RegExp(r'[\\/]')).last,
+                              ),
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.black54),
                             ),
@@ -565,9 +516,9 @@ class _QuestionFormState extends State<QuestionForm> {
                           const SizedBox(height: 20),
                         ],
                       ),
-                    const Text(
-                      'Type de réponse',
-                      style: TextStyle(
+                    Text(
+                      l.questionFormAnswerTypeLabel,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -575,18 +526,18 @@ class _QuestionFormState extends State<QuestionForm> {
                     const SizedBox(height: 10),
                     SegmentedButton<AnswerType>(
                       showSelectedIcon: false,
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: AnswerType.open,
-                          label: Text('Ouverte'),
+                          label: Text(l.answerTypeOpen),
                         ),
                         ButtonSegment(
                           value: AnswerType.singleChoice,
-                          label: Text('Choix'),
+                          label: Text(l.answerTypeSingle),
                         ),
                         ButtonSegment(
                           value: AnswerType.multipleChoice,
-                          label: Text('Multiple'),
+                          label: Text(l.answerTypeMultiple),
                         ),
                       ],
                       selected: {_answerType},
@@ -607,8 +558,8 @@ class _QuestionFormState extends State<QuestionForm> {
                       TextFormField(
                         controller: _openAnswersController,
                         decoration: InputDecoration(
-                          labelText: 'Réponses attendues (séparées par ;)',
-                          hintText: 'ex: Paris; paris',
+                          labelText: l.questionFormExpectedAnswersLabel,
+                          hintText: l.questionFormExpectedAnswersHint,
                           prefixIcon: const Icon(Icons.check_circle_outline),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -619,7 +570,7 @@ class _QuestionFormState extends State<QuestionForm> {
                         validator: (value) {
                           if (_answerType == AnswerType.open &&
                               (value == null || value.trim().isEmpty)) {
-                            return 'Veuillez entrer au moins une réponse attendue';
+                            return l.questionFormMinAnswer;
                           }
                           return null;
                         },
@@ -628,9 +579,9 @@ class _QuestionFormState extends State<QuestionForm> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Réponses possibles',
-                            style: TextStyle(
+                          Text(
+                            l.choiceAnswersLabel,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -638,7 +589,7 @@ class _QuestionFormState extends State<QuestionForm> {
                           TextButton.icon(
                             onPressed: _addChoiceField,
                             icon: const Icon(Icons.add),
-                            label: const Text('Ajouter'),
+                            label: Text(l.choiceAddButton),
                           ),
                         ],
                       ),
@@ -672,7 +623,7 @@ class _QuestionFormState extends State<QuestionForm> {
                                 child: TextFormField(
                                   controller: controller,
                                   decoration: InputDecoration(
-                                    hintText: 'Réponse ${index + 1}',
+                                    hintText: l.choiceHint(index + 1),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -685,7 +636,7 @@ class _QuestionFormState extends State<QuestionForm> {
                                     if (_answerType != AnswerType.open &&
                                         (value == null ||
                                             value.trim().isEmpty)) {
-                                      return 'Réponse requise';
+                                      return l.choiceRequired;
                                     }
                                     return null;
                                   },
@@ -705,8 +656,8 @@ class _QuestionFormState extends State<QuestionForm> {
                       const SizedBox(height: 10),
                       Text(
                         _answerType == AnswerType.singleChoice
-                            ? 'Cochez la bonne réponse'
-                            : 'Cochez toutes les bonnes réponses',
+                            ? l.choiceSelectOne
+                            : l.choiceSelectMultiple,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],

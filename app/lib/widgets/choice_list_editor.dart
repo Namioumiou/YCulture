@@ -50,7 +50,11 @@ class _ChoiceListEditorState extends State<ChoiceListEditor> {
     // Réinitialise les bonnes réponses lors du passage entre choix unique et multiple.
     if (old.answerType != widget.answerType) {
       setState(() => _correctIndices.clear());
-      _notify();
+      // Avoid notifying parent during build/update cycle.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notify();
+      });
     }
   }
 

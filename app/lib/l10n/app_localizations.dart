@@ -758,6 +758,12 @@ abstract class AppLocalizations {
   /// **'Veuillez sélectionner au moins une bonne réponse'**
   String get questionFormSelectCorrect;
 
+  /// No description provided for @questionFormMinChoices.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez au moins deux choix de réponse'**
+  String get questionFormMinChoices;
+
   /// No description provided for @answerTypeOpen.
   ///
   /// In fr, this message translates to:

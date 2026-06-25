@@ -441,6 +441,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please select at least one correct answer';
 
   @override
+  String get questionFormMinChoices => 'Add at least two answer choices';
+
+  @override
   String get answerTypeOpen => 'Open';
 
   @override

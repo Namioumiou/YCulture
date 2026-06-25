@@ -118,6 +118,7 @@
   "questionFormStopRecording": "Stop the recording before saving the question.",
   "questionFormMinAnswer": "Please enter at least one expected answer",
   "questionFormSelectCorrect": "Please select at least one correct answer",
+  "questionFormMinChoices": "Add at least two answer choices",
 
   "answerTypeOpen": "Open",
   "answerTypeSingle": "Choice",
