@@ -160,6 +160,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get themeDeleteThemeTitle => 'Supprimer le thème ?';
+
+  @override
+  String themeDeleteThemeConfirm(String themeName) {
+    return 'Cela supprimera le thème \"$themeName\"';
+  }
+
+  @override
   String get themeDeleteCancel => 'Annuler';
 
   @override

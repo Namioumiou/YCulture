@@ -72,6 +72,7 @@ class ThemeSelectionScreen extends StatelessWidget {
                           theme: theme,
                           questionCount: questions.length,
                           onSettingsTap: () => _showThemeQuestions(context, theme),
+                          onDeleteTap: () => _showDeleteThemeDialog(context, theme),
                           onTap: () {
                             if (questions.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -106,12 +107,14 @@ class _ThemeCard extends StatelessWidget {
   final int questionCount;
   final VoidCallback onTap;
   final VoidCallback onSettingsTap;
+  final VoidCallback onDeleteTap;
 
   const _ThemeCard({
     required this.theme,
     required this.questionCount,
     required this.onTap,
     required this.onSettingsTap,
+    required this.onDeleteTap,
   });
 
   @override
@@ -166,12 +169,24 @@ class _ThemeCard extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                onPressed: onSettingsTap,
-                tooltip: l.themeManageTooltip,
-                constraints: const BoxConstraints.tightFor(width: 34, height: 34),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.tune_rounded, color: AppColors.muted),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: onSettingsTap,
+                    tooltip: l.themeManageTooltip,
+                    constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.tune_rounded, color: AppColors.muted),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: onDeleteTap,
+                    tooltip: l.themeDeleteButton,
+                    constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
               Container(
@@ -212,9 +227,16 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppSectionTitle(
-                        title: theme.name,
-                        subtitle: l.themeQuestionsInTheme(questions.length),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AppSectionTitle(
+                              title: theme.name,
+                              subtitle: l.themeQuestionsInTheme(questions.length),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 18),
                       Expanded(
@@ -314,6 +336,45 @@ void _showThemeQuestions(BuildContext parentContext, QuizTheme theme) {
             ),
           );
         },
+      );
+    },
+  );
+}
+
+/// Affiche une boîte de dialogue de confirmation avant de supprimer le [theme].
+void _showDeleteThemeDialog(BuildContext context, QuizTheme theme) {
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      final l = AppLocalizations.of(context);
+
+      return AlertDialog(
+        title: Text(l.themeDeleteThemeTitle),
+        content: Text(l.themeDeleteThemeConfirm(theme.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.themeDeleteCancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await Provider.of<QuizProvider>(
+                context,
+                listen: false,
+              ).deleteTheme(theme.id);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l.profileThemeDeleted),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            },
+            child: Text(l.themeDeleteButton),
+          ),
+        ],
       );
     },
   );
