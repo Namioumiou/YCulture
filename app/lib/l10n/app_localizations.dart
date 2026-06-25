@@ -242,6 +242,18 @@ abstract class AppLocalizations {
   /// **'Cette action est irréversible.\n\n\"{questionText}\"'**
   String themeDeleteConfirm(String questionText);
 
+  /// No description provided for @themeDeleteThemeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le thème ?'**
+  String get themeDeleteThemeTitle;
+
+  /// No description provided for @themeDeleteThemeConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cela supprimera le thème \"{themeName}\"'**
+  String themeDeleteThemeConfirm(String themeName);
+
   /// No description provided for @themeDeleteCancel.
   ///
   /// In fr, this message translates to:

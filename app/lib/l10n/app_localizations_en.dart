@@ -156,6 +156,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get themeDeleteThemeTitle => 'Delete theme?';
+
+  @override
+  String themeDeleteThemeConfirm(String themeName) {
+    return 'This will delete the theme "$themeName"';
+  }
+
+  @override
   String get themeDeleteCancel => 'Cancel';
 
   @override
